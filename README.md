@@ -81,9 +81,9 @@ an IIS server automatically on every push to `main` (or manually via
    configured deploy path with `robocopy`, then restarts the pool — causing
    brief downtime during the file sync and application restart.
 
-`appsettings.Production.json` is excluded from the robocopy mirror
-(`/XF appsettings.Production.json`) so the server's production configuration
-is **never overwritten or deleted** by a deployment.
+`appsettings.json` and all `appsettings.*.json` files are excluded from the
+robocopy mirror (`/XF appsettings.json "appsettings.*.json"`) so **no**
+configuration file on the server is ever overwritten or deleted by a deployment.
 
 ### Runner setup
 
@@ -156,9 +156,11 @@ Copy the output to the VM (or build on the VM). The publish output includes
 the shipped `web.config` — `<IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>`
 in the csproj prevents publish from overwriting it.
 
-`appsettings.Development.json` is excluded from the publish output by the
-csproj (`<CopyToPublishDirectory>Never</CopyToPublishDirectory>`) so
-development-only settings never reach the server.
+All `appsettings*.json` files are excluded from the publish output
+(`CopyToPublishDirectory=Never` in the csproj) because they are managed
+directly on the server. On a **fresh server**, copy `appsettings.json` from
+the repo into the deploy folder and create `appsettings.Production.json` by
+hand (see § Configure below) before starting the site.
 
 ### 3. Configure
 
@@ -175,11 +177,11 @@ Create (or edit) `C:\apps\partypix\appsettings.Production.json`:
 }
 ```
 
-> **Important — this file is not tracked in git and is never overwritten by a
+> **Important — all `appsettings*.json` files are never overwritten by a
 > deployment.** Both the csproj (`CopyToPublishDirectory=Never`) and the
-> robocopy step in the GitHub Actions workflow (`/XF appsettings.Production.json`)
-> explicitly exclude it, so your production configuration survives every
-> subsequent deploy.
+> robocopy step in the GitHub Actions workflow
+> (`/XF appsettings.json "appsettings.*.json"`) explicitly exclude them, so
+> every configuration file on the server survives every subsequent deploy.
 >
 > To change a production setting: edit the file directly on the server and
 > restart the IIS Application Pool (or `iisreset`). No re-deploy is required.

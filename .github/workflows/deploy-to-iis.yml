@@ -110,11 +110,12 @@ jobs:
           # never deleted. Media lives at C:\daubery\partypix.files and SQL
           # state lives in SQL Server, so neither is on this deploy path.
           #
-          # appsettings.Production.json is excluded so the manually-maintained
-          # production configuration (connection strings, storage paths, etc.)
-          # is never overwritten or deleted by a deployment.  Create or edit
-          # this file directly on the server; see README § Configure.
-          robocopy $src $dest /MIR /NP /NFL /NDL /XD App_Data logs /XF *.log appsettings.Production.json
+          # All appsettings files (appsettings.json and appsettings.*.json) are
+          # excluded so any configuration file present on the server — whether
+          # the base settings or an environment-specific override — is never
+          # overwritten or deleted by a deployment.  Edit config files directly
+          # on the server and restart the app pool; see README § Configure.
+          robocopy $src $dest /MIR /NP /NFL /NDL /XD App_Data logs /XF *.log appsettings.json "appsettings.*.json"
           # Robocopy exit codes 0-7 are success (8+ indicate copy errors).
           # Capture immediately; do NOT reference $LASTEXITCODE after this line,
           # because PowerShell propagates the last native exit code as the step
