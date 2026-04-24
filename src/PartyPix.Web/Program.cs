@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -58,22 +59,33 @@ builder.Services.AddSignalR();
 builder.Services.AddControllers();
 
 // Trust proxy headers. Cloudflare Tunnel is effectively the only proxy in
-// front, and it connects to us on localhost. Accept X-Forwarded-For from it
-// and also promote CF-Connecting-IP via middleware below.
+// front, and it connects to us on localhost. Accept X-Forwarded-For only from
+// loopback (127.0.0.0/8 and ::1) so direct/untrusted requests cannot spoof
+// client IP or protocol. CF-Connecting-IP is also promoted by the middleware
+// below, which gates promotion on RemoteIpAddress being loopback.
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    o.KnownNetworks.Clear();
+    o.KnownIPNetworks.Clear();
     o.KnownProxies.Clear();
+    o.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Loopback, 8));       // 127.0.0.0/8
+    o.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.IPv6Loopback, 128)); // ::1/128
+    o.ForwardLimit = 1;
 });
 
 // Allow large uploads. With in-process IIS hosting this IISServerOptions
 // value governs body size; the matching web.config value is
 // system.webServer/security/requestFiltering/requestLimits/@maxAllowedContentLength.
 // tus chunks stay under Cloudflare's 100MB body limit regardless.
+// Read the limit once so IIS and tus always use the same effective value.
+const long DefaultMaxUploadBytes = 524288000; // 500 MB
+var maxUploadBytes = builder.Configuration.GetValue<long?>("Tus:MaxUploadBytes") ?? DefaultMaxUploadBytes;
+// tusdotnet's MaxAllowedUploadSizeInBytes is int?, so clamp to int.MaxValue.
+var maxUploadBytesForTus = (int)Math.Min(maxUploadBytes, int.MaxValue);
+
 builder.Services.Configure<IISServerOptions>(o =>
 {
-    o.MaxRequestBodySize = builder.Configuration.GetValue<long?>("Tus:MaxUploadBytes") ?? 524288000;
+    o.MaxRequestBodySize = maxUploadBytes;
 });
 
 var app = builder.Build();
@@ -102,7 +114,7 @@ Directory.CreateDirectory(tusTempPath);
 app.MapTus("/api/uploads", async httpContext => new DefaultTusConfiguration
 {
     Store = new TusDiskStore(tusTempPath),
-    MaxAllowedUploadSizeInBytes = app.Configuration.GetValue<long?>("Tus:MaxUploadBytes"),
+    MaxAllowedUploadSizeInBytes = maxUploadBytesForTus,
     Events = new Events
     {
         OnFileCompleteAsync = async ctx =>

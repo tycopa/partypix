@@ -11,7 +11,9 @@ public class CloudflareClientIpMiddleware(RequestDelegate next)
     {
         var header = ctx.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(header) &&
-            System.Net.IPAddress.TryParse(header, out var ip))
+            System.Net.IPAddress.TryParse(header, out var ip) &&
+            ctx.Connection.RemoteIpAddress is { } proxy &&
+            System.Net.IPAddress.IsLoopback(proxy))
         {
             ctx.Connection.RemoteIpAddress = ip;
         }

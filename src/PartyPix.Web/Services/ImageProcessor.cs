@@ -21,6 +21,7 @@ public class ImageProcessor(IStorageService storage, ILogger<ImageProcessor> log
         string thumbKey,
         CancellationToken ct = default)
     {
+        log.LogDebug("Processing image");
         await using var input = storage.OpenRead(originalKey);
         using var image = await Image.LoadAsync(input, ct);
 
