@@ -16,10 +16,16 @@
 #
 # IIS SITE ASSUMPTIONS:
 #   • An IIS site and Application Pool already exist and point at IIS_DEPLOY_PATH
-#   • The Application Pool identity has write access to App_Data/ inside that path
-#   • The .NET CLR version for the pool should be set to "No Managed Code"
-#     (ASP.NET Core is hosted out-of-process via the ASP.NET Core Module)
-#   • web.config is included in the published output (dotnet publish generates it)
+#     (scripts/install-iis.ps1 sets this up on a fresh box).
+#   • The Application Pool identity has:
+#       - write access to IIS_DEPLOY_PATH (for App_Data/logs)
+#       - write access to C:\daubery\partypix.files (Storage:RootPath + tus temp)
+#       - a SQL login on the PartyPix database (or the connection string uses
+#         SQL auth).
+#   • The .NET CLR version for the pool is set to "No Managed Code"
+#     (ASP.NET Core is hosted in-process via AspNetCoreModuleV2; see web.config).
+#   • web.config is shipped in-repo at src/PartyPix.Web/web.config. The csproj
+#     sets IsTransformWebConfigDisabled=true so dotnet publish leaves it alone.
 
 name: Deploy to IIS
 
@@ -103,8 +109,9 @@ jobs:
           # Robocopy: mirror publish output → deploy path, excluding runtime data.
           # /MIR intentionally removes destination files not present in the
           # source so each deployment reflects the exact published output.
-          # App_Data (SQLite DB, uploads) and logs are excluded from mirroring
-          # so runtime data is never deleted.
+          # App_Data (Serilog rolling logs) is excluded so runtime data is
+          # never deleted. Media lives at C:\daubery\partypix.files and SQL
+          # state lives in SQL Server, so neither is on this deploy path.
           robocopy $src $dest /MIR /NP /NFL /NDL /XD App_Data logs /XF *.log
           # Robocopy exit codes 0-7 are success (8+ indicate copy errors)
           if ($LASTEXITCODE -ge 8) {
