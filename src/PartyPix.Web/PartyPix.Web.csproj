@@ -40,13 +40,7 @@
          run directly against the deploy path, and documents the intent clearly.
          On a fresh server, copy appsettings.json from the repo and create
          appsettings.Production.json by hand before starting the site. -->
-    <Content Update="appsettings.json">
-      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-    </Content>
-    <Content Update="appsettings.Development.json">
-      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-    </Content>
-    <Content Update="appsettings.Production.json">
+    <Content Update="appsettings*.json">
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
