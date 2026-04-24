@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -58,13 +59,18 @@ builder.Services.AddSignalR();
 builder.Services.AddControllers();
 
 // Trust proxy headers. Cloudflare Tunnel is effectively the only proxy in
-// front, and it connects to us on localhost. Accept X-Forwarded-For from it
-// and also promote CF-Connecting-IP via middleware below.
+// front, and it connects to us on localhost. Accept X-Forwarded-For only from
+// loopback (127.0.0.0/8 and ::1) so direct/untrusted requests cannot spoof
+// client IP or protocol. CF-Connecting-IP is also promoted by the middleware
+// below, which gates promotion on RemoteIpAddress being loopback.
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     o.KnownIPNetworks.Clear();
     o.KnownProxies.Clear();
+    o.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Loopback, 8));       // 127.0.0.0/8
+    o.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.IPv6Loopback, 128)); // ::1/128
+    o.ForwardLimit = 1;
 });
 
 // Allow large uploads. With in-process IIS hosting this IISServerOptions
