@@ -65,6 +65,56 @@ Tailwind watcher (in a second terminal):
 npm run dev
 ```
 
+## Automated deployment with GitHub Actions
+
+A workflow at `.github/workflows/deploy-to-iis.yml` deploys the application to
+an IIS server automatically on every push to `main` (or manually via
+**Actions → Deploy to IIS → Run workflow**).
+
+### How it works
+
+1. The workflow runs on a **Windows self-hosted runner** registered on the IIS
+   host.
+2. It builds the Tailwind CSS bundle with Node.js 20 and publishes the ASP.NET
+   Core app with `dotnet publish -c Release`.
+3. It stops the IIS Application Pool, mirrors the published output to the
+   configured deploy path with `robocopy`, then restarts the pool — causing
+   brief downtime during the file sync and application restart.
+
+### Runner setup
+
+1. On the IIS host, follow the GitHub docs to
+   [add a self-hosted runner](https://docs.github.com/en/actions/hosting-your-own-runners/adding-self-hosted-runners).
+2. Ensure the runner service account has:
+   - Write access to the IIS deploy directory.
+   - Permission to stop/start the IIS Application Pool.
+     (`IIS AppPool\<pool-name>` or an administrator account).
+3. Install prerequisites on the host:
+   - **.NET 9 Hosting Bundle** (includes the ASP.NET Core Module for IIS)
+   - **Node.js 20+**
+
+### Required secrets
+
+Add these in **Settings → Secrets and variables → Actions**:
+
+| Secret | Example value | Description |
+|---|---|---|
+| `IIS_DEPLOY_PATH` | `C:\inetpub\wwwroot\partypix` | Absolute path IIS serves the app from |
+| `IIS_APP_POOL_NAME` | `PartyPix` | Name of the IIS Application Pool |
+
+### IIS site assumptions
+
+- An IIS **Web Site** and **Application Pool** already exist and point at
+  `IIS_DEPLOY_PATH`.
+- The Application Pool's **.NET CLR version** is set to **"No Managed Code"**
+  (ASP.NET Core runs out-of-process via the ASP.NET Core Module).
+- The pool identity has write access to `App_Data\` inside the deploy path
+  (for the SQLite database and uploads).
+- `web.config` is generated automatically by `dotnet publish` — no manual IIS
+  handler mapping is needed.
+
+---
+
 ## Production deployment on a Windows VM
 
 ### 1. Prepare the VM
