@@ -110,11 +110,17 @@ jobs:
           # never deleted. Media lives at C:\daubery\partypix.files and SQL
           # state lives in SQL Server, so neither is on this deploy path.
           robocopy $src $dest /MIR /NP /NFL /NDL /XD App_Data logs /XF *.log
-          # Robocopy exit codes 0-7 are success (8+ indicate copy errors)
-          if ($LASTEXITCODE -ge 8) {
-              throw "robocopy failed with exit code $LASTEXITCODE"
+          # Robocopy exit codes 0-7 are success (8+ indicate copy errors).
+          # Capture immediately; do NOT reference $LASTEXITCODE after this line,
+          # because PowerShell propagates the last native exit code as the step
+          # exit code even when the script succeeds. We rely on `exit 0` below
+          # so a successful informational robocopy code does not bubble up.
+          $robocopyExit = $LASTEXITCODE
+          if ($robocopyExit -ge 8) {
+              throw "robocopy failed with exit code $robocopyExit"
           }
           Write-Host "Files synced to $dest"
+          exit 0
 
       - name: Start IIS Application Pool
         shell: powershell
