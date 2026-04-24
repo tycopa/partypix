@@ -73,8 +73,8 @@ an IIS server automatically on every push to `main` (or manually via
 2. It builds the Tailwind CSS bundle with Node.js 20 and publishes the ASP.NET
    Core app with `dotnet publish -c Release`.
 3. It stops the IIS Application Pool, mirrors the published output to the
-   configured deploy path with `robocopy`, then restarts the pool — providing
-   a near-zero-downtime hot-swap.
+   configured deploy path with `robocopy`, then restarts the pool — causing
+   brief downtime during the file sync and application restart.
 
 ### Runner setup
 
