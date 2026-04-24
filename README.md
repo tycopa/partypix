@@ -161,8 +161,8 @@ Edit `C:\apps\partypix\appsettings.Production.json`:
   "ConnectionStrings": {
     "Default": "Server=localhost\\SQLEXPRESS;Database=PartyPix;Trusted_Connection=True;TrustServerCertificate=True"
   },
-  "Storage": { "RootPath": "D:\\partypix-media" },
-  "Tus":     { "TempPath": "D:\\partypix-tus", "MaxUploadBytes": 524288000 },
+  "Storage": { "RootPath": "C:\\daubery\\partypix.files" },
+  "Tus":     { "TempPath": "C:\\daubery\\partypix.files\\_tus", "MaxUploadBytes": 524288000 },
   "PublicBaseUrl": "https://partypix.example.com"
 }
 ```
@@ -189,9 +189,17 @@ The script:
 - Grants `IIS AppPool\PartyPix` Modify on the publish folder so
   App_Data logs and any in-folder storage/tus paths work.
 
-If `Storage:RootPath` or `Tus:TempPath` point outside the publish folder
-(e.g. `D:\partypix-media`), grant `IIS AppPool\PartyPix` Modify on those
-folders too.
+`Storage:RootPath` and `Tus:TempPath` default to `C:\daubery\partypix.files`.
+Create that folder and grant `IIS AppPool\PartyPix` Modify:
+
+```powershell
+$media = "C:\daubery\partypix.files"
+New-Item -ItemType Directory -Force -Path $media, "$media\_tus" | Out-Null
+$acl = Get-Acl $media
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+    "IIS AppPool\PartyPix", "Modify", "ContainerInherit,ObjectInherit", "None", "Allow")
+$acl.AddAccessRule($rule); Set-Acl -Path $media -AclObject $acl
+```
 
 Verify it's alive:
 ```powershell
