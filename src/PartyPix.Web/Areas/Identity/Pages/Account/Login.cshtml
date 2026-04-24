@@ -5,8 +5,8 @@
 }
 
 <section class="mx-auto max-w-md px-4 py-16">
-    <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Sign in</h1>
-    <p class="mt-1 text-sm text-slate-600">Welcome back.</p>
+    <h1 class="text-3xl font-semibold tracking-tight text-bronze">Sign in</h1>
+    <p class="mt-1 text-sm text-ink-soft">Welcome back.</p>
 
     <form method="post" class="mt-8 space-y-4">
         <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
@@ -14,32 +14,32 @@
         <div asp-validation-summary="All" class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 empty:hidden"></div>
 
         <div>
-            <label asp-for="Input.Email" class="block text-sm font-medium text-slate-700">Email</label>
+            <label asp-for="Input.Email" class="block text-sm font-medium text-ink">Email</label>
             <input asp-for="Input.Email" autocomplete="username"
-                   class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-            <span asp-validation-for="Input.Email" class="mt-1 block text-xs text-red-600"></span>
+                   class="mt-1 block w-full rounded-md border border-bronze/30 bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze" />
+            <span asp-validation-for="Input.Email" class="mt-1 block text-xs text-red-700"></span>
         </div>
 
         <div>
-            <label asp-for="Input.Password" class="block text-sm font-medium text-slate-700">Password</label>
+            <label asp-for="Input.Password" class="block text-sm font-medium text-ink">Password</label>
             <input asp-for="Input.Password" autocomplete="current-password" type="password"
-                   class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-            <span asp-validation-for="Input.Password" class="mt-1 block text-xs text-red-600"></span>
+                   class="mt-1 block w-full rounded-md border border-bronze/30 bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze" />
+            <span asp-validation-for="Input.Password" class="mt-1 block text-xs text-red-700"></span>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-slate-700">
-            <input asp-for="Input.RememberMe" type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+        <label class="flex items-center gap-2 text-sm text-ink">
+            <input asp-for="Input.RememberMe" type="checkbox" class="rounded border-bronze/40 text-bronze focus:ring-bronze" />
             Remember me
         </label>
 
         <button type="submit"
-                class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                class="w-full rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
             Sign in
         </button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-slate-600">
+    <p class="mt-6 text-center text-sm text-ink-soft">
         Don&rsquo;t have an account?
-        <a asp-page="./Register" class="font-medium text-indigo-600 hover:underline">Create one</a>
+        <a asp-page="./Register" class="font-medium text-bronze hover:underline">Create one</a>
     </p>
 </section>

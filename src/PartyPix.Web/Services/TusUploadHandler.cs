@@ -107,7 +107,8 @@ public class TusUploadHandler(
             }
 
             await db.SaveChangesAsync(ctx.CancellationToken);
-            await notifier.BroadcastMediaAddedAsync(ev.Slug, media.Id, ctx.CancellationToken);
+            await notifier.BroadcastMediaAddedAsync(
+                ev.Slug, media.Id, session?.DisplayName, (int)kind, ctx.CancellationToken);
         }
         catch (Exception ex)
         {

@@ -1,0 +1,53 @@
+@* Full-screen photo viewer. Include inside an element whose x-data is
+   galleryLightbox(...) so the overlay shares reactive state with the grid. *@
+<div x-cloak
+     x-show="index !== null"
+     x-transition.opacity
+     @@keydown.escape.window="close()"
+     @@keydown.arrow-left.window="prev()"
+     @@keydown.arrow-right.window="next()"
+     @@click.self="close()"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
+    <button type="button" @@click.stop="close()" aria-label="Close"
+            class="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" class="h-6 w-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18L18 6" />
+        </svg>
+    </button>
+
+    <button type="button" @@click.stop="prev()" aria-label="Previous"
+            x-show="items.length > 1"
+            class="absolute left-2 sm:left-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" class="h-7 w-7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
+        </svg>
+    </button>
+
+    <button type="button" @@click.stop="next()" aria-label="Next"
+            x-show="items.length > 1"
+            class="absolute right-2 sm:right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" class="h-7 w-7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6" />
+        </svg>
+    </button>
+
+    <img x-show="index !== null"
+         :src="index !== null ? ('/media/' + items[index].id + '/display') : ''"
+         alt=""
+         class="max-h-[85vh] max-w-[95vw] object-contain"
+         @@click.stop />
+
+    <div class="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1 text-white">
+        <div x-show="index !== null && items[index] && items[index].uploaderName"
+             class="rounded-full bg-white/10 px-3 py-1 text-sm">
+            Uploaded by <span class="font-medium" x-text="index !== null && items[index] ? (items[index].uploaderName ?? '') : ''"></span>
+        </div>
+        <div x-show="items.length > 1"
+             class="rounded-full bg-white/10 px-3 py-1 text-xs">
+            <span x-text="(index ?? 0) + 1"></span> / <span x-text="items.length"></span>
+        </div>
+    </div>
+</div>

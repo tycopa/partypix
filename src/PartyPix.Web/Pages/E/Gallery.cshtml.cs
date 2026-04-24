@@ -11,7 +11,9 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
 {
     public Event Event { get; private set; } = default!;
     public GuestSession Guest { get; private set; } = default!;
-    public List<Media> Media { get; private set; } = new();
+    public List<GalleryItem> Items { get; private set; } = new();
+
+    public record GalleryItem(Guid Id, int Kind, string? UploaderName);
 
     public async Task<IActionResult> OnGetAsync(string slug, CancellationToken ct)
     {
@@ -23,10 +25,14 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
 
         Event = ev;
         Guest = guest;
-        Media = await db.Media
+        Items = await db.Media
             .Where(m => m.EventId == ev.Id && m.Status == MediaStatus.Ready)
             .OrderByDescending(m => m.CreatedAt)
             .Take(200)
+            .Select(m => new GalleryItem(
+                m.Id,
+                (int)m.Kind,
+                m.GuestSession != null ? m.GuestSession.DisplayName : null))
             .ToListAsync(ct);
         return Page();
     }

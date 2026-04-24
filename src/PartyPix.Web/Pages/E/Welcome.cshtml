@@ -6,37 +6,37 @@
 }
 
 <section class="py-10">
-    <h1 class="text-3xl font-semibold tracking-tight">@Model.Event.Title</h1>
-    <p class="mt-1 text-sm text-slate-400">@Model.Event.EventDate.ToString("MMM d, yyyy")</p>
+    <h1 class="text-3xl font-semibold tracking-tight text-bronze">@Model.Event.Title</h1>
+    <p class="mt-1 text-sm text-ink-soft">@Model.Event.EventDate.ToString("MMM d, yyyy")</p>
 
     @if (!string.IsNullOrWhiteSpace(Model.Event.WelcomeMessage))
     {
-        <p class="mt-6 whitespace-pre-line text-lg text-slate-200">@Model.Event.WelcomeMessage</p>
+        <p class="mt-6 whitespace-pre-line text-lg text-ink">@Model.Event.WelcomeMessage</p>
     }
 
     <form method="post" class="mt-10 space-y-4">
-        <div asp-validation-summary="ModelOnly" class="rounded bg-red-900/30 p-3 text-sm text-red-300"></div>
+        <div asp-validation-summary="ModelOnly" class="rounded bg-red-100 p-3 text-sm text-red-700 empty:hidden"></div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-300" asp-for="Input.DisplayName">Your name</label>
+            <label class="block text-sm font-medium text-ink" asp-for="Input.DisplayName">Your name</label>
             <input asp-for="Input.DisplayName"
-                   class="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-3 text-lg"
+                   class="mt-1 w-full rounded-md border border-bronze/30 bg-white px-3 py-3 text-lg text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
                    autocomplete="name" autofocus />
-            <span asp-validation-for="Input.DisplayName" class="text-xs text-red-400"></span>
+            <span asp-validation-for="Input.DisplayName" class="text-xs text-red-700"></span>
         </div>
 
         @if (!string.IsNullOrEmpty(Model.Event.AccessCode))
         {
             <div>
-                <label class="block text-sm font-medium text-slate-300" asp-for="Input.AccessCode">Access code</label>
+                <label class="block text-sm font-medium text-ink" asp-for="Input.AccessCode">Access code</label>
                 <input asp-for="Input.AccessCode"
-                       class="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-3 text-lg" />
-                <span asp-validation-for="Input.AccessCode" class="text-xs text-red-400"></span>
+                       class="mt-1 w-full rounded-md border border-bronze/30 bg-white px-3 py-3 text-lg text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze" />
+                <span asp-validation-for="Input.AccessCode" class="text-xs text-red-700"></span>
             </div>
         }
 
         <button type="submit"
-                class="w-full rounded-md bg-indigo-600 px-4 py-3 text-lg font-medium text-white hover:bg-indigo-500">
+                class="w-full rounded-md bg-bronze px-4 py-3 text-lg font-medium text-white hover:bg-bronze-deep">
             Join the gallery
         </button>
     </form>

@@ -5,47 +5,48 @@
 }
 
 <section class="mx-auto max-w-xl px-4 py-10">
-    <h1 class="text-2xl font-semibold">Create an event</h1>
-    <p class="mt-1 text-sm text-slate-500">Takes about 30 seconds.</p>
+    <h1 class="text-2xl font-semibold text-bronze">Create an event</h1>
+    <p class="mt-1 text-sm text-ink-soft">Takes about 30 seconds.</p>
 
     <form method="post" class="mt-8 space-y-5">
-        <div asp-validation-summary="ModelOnly" class="rounded-md bg-red-50 p-3 text-sm text-red-700"></div>
+        <div asp-validation-summary="ModelOnly" class="rounded-md bg-red-50 p-3 text-sm text-red-700 empty:hidden"></div>
 
         <div>
-            <label asp-for="Input.Title" class="block text-sm font-medium">Event title</label>
-            <input asp-for="Input.Title" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            <label asp-for="Input.Title" class="block text-sm font-medium text-ink">Event title</label>
+            <input asp-for="Input.Title"
+                   class="mt-1 w-full rounded-md border border-bronze/30 bg-white px-3 py-2 text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
                    placeholder="Sarah's 30th" autofocus />
-            <span asp-validation-for="Input.Title" class="text-xs text-red-600"></span>
+            <span asp-validation-for="Input.Title" class="text-xs text-red-700"></span>
         </div>
 
         <div>
-            <label asp-for="Input.EventDate" class="block text-sm font-medium">Date</label>
+            <label asp-for="Input.EventDate" class="block text-sm font-medium text-ink">Date</label>
             <input asp-for="Input.EventDate" type="date"
-                   class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" />
-            <span asp-validation-for="Input.EventDate" class="text-xs text-red-600"></span>
+                   class="mt-1 w-full rounded-md border border-bronze/30 bg-white px-3 py-2 text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze" />
+            <span asp-validation-for="Input.EventDate" class="text-xs text-red-700"></span>
         </div>
 
         <div>
-            <label asp-for="Input.WelcomeMessage" class="block text-sm font-medium">Welcome message</label>
+            <label asp-for="Input.WelcomeMessage" class="block text-sm font-medium text-ink">Welcome message</label>
             <textarea asp-for="Input.WelcomeMessage" rows="3"
-                      class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+                      class="mt-1 w-full rounded-md border border-bronze/30 bg-white px-3 py-2 text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
                       placeholder="Thanks for celebrating with us — drop your photos here!"></textarea>
         </div>
 
         <div>
-            <label asp-for="Input.AccessCode" class="block text-sm font-medium">
-                Access code <span class="text-slate-400">(optional)</span>
+            <label asp-for="Input.AccessCode" class="block text-sm font-medium text-ink">
+                Access code <span class="text-ink-soft">(optional)</span>
             </label>
             <input asp-for="Input.AccessCode"
-                   class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+                   class="mt-1 w-full rounded-md border border-bronze/30 bg-white px-3 py-2 text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
                    placeholder="e.g. 1234" />
-            <p class="mt-1 text-xs text-slate-500">If set, guests must enter this before uploading.</p>
+            <p class="mt-1 text-xs text-ink-soft">If set, guests must enter this before uploading.</p>
         </div>
 
         <div class="flex justify-end gap-2">
-            <a asp-page="/Admin/Index" class="rounded-md px-4 py-2 text-sm text-slate-600 hover:text-slate-900">Cancel</a>
+            <a asp-page="/Admin/Index" class="rounded-md px-4 py-2 text-sm text-ink-soft hover:text-bronze">Cancel</a>
             <button type="submit"
-                    class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                    class="rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
                 Create event
             </button>
         </div>

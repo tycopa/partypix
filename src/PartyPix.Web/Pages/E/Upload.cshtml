@@ -6,27 +6,27 @@
 }
 
 <section class="py-6" x-data="uploader()" x-init="init()">
-    <a asp-page="/E/Gallery" asp-route-slug="@Model.Event.Slug" class="text-sm text-slate-400 hover:underline">&larr; Gallery</a>
+    <a asp-page="/E/Gallery" asp-route-slug="@Model.Event.Slug" class="text-sm text-ink-soft hover:text-bronze hover:underline">&larr; Gallery</a>
 
-    <h1 class="mt-2 text-2xl font-semibold">Add photos & videos</h1>
-    <p class="text-sm text-slate-400">Uploading as <strong>@Model.Guest.DisplayName</strong></p>
+    <h1 class="mt-2 text-2xl font-semibold text-bronze">Add photos &amp; videos</h1>
+    <p class="text-sm text-ink-soft">Uploading as <strong class="text-ink">@Model.Guest.DisplayName</strong></p>
 
-    <label class="mt-8 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/50 p-6 text-center hover:bg-slate-900">
+    <label class="mt-8 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-bronze/40 bg-white/50 p-6 text-center text-ink hover:bg-white/80">
         <span class="text-base font-medium">Tap to choose from your camera roll</span>
-        <span class="mt-1 text-xs text-slate-400">Photos or videos. You can select multiple.</span>
+        <span class="mt-1 text-xs text-ink-soft">Photos or videos. You can select multiple.</span>
         <input type="file" accept="image/*,video/*" multiple class="sr-only"
                @@change="onFiles($event.target.files)" />
     </label>
 
     <ul class="mt-6 space-y-2">
         <template x-for="f in files" :key="f.id">
-            <li class="rounded-md bg-slate-900 p-3 ring-1 ring-slate-800">
+            <li class="rounded-md bg-white p-3 ring-1 ring-bronze/20">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="truncate text-sm" x-text="f.name"></span>
-                    <span class="text-xs text-slate-400" x-text="f.status"></span>
+                    <span class="truncate text-sm text-ink" x-text="f.name"></span>
+                    <span class="text-xs text-ink-soft" x-text="f.status"></span>
                 </div>
-                <div class="mt-2 h-1.5 overflow-hidden rounded bg-slate-800">
-                    <div class="h-full bg-indigo-500 transition-all" :style="'width:' + f.pct + '%'"></div>
+                <div class="mt-2 h-1.5 overflow-hidden rounded bg-parchment">
+                    <div class="h-full bg-bronze transition-all" :style="'width:' + f.pct + '%'"></div>
                 </div>
             </li>
         </template>

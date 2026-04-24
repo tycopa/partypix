@@ -1,54 +1,57 @@
 @page "{slug}"
+@using System.Text.Json
 @model PartyPix.Web.Pages.Admin.Events.DetailModel
 @{
     ViewData["Title"] = Model.Event.Title;
+    var recentItems = JsonSerializer.Serialize(
+        Model.RecentMedia.Select(i => new { id = i.Id, kind = i.Kind, uploaderName = i.UploaderName }));
 }
 
 <section class="mx-auto max-w-5xl px-4 py-10">
-    <a asp-page="/Admin/Index" class="text-sm text-slate-500 hover:underline">&larr; All events</a>
+    <a asp-page="/Admin/Index" class="text-sm text-ink-soft hover:text-bronze hover:underline">&larr; All events</a>
     <div class="mt-2 flex flex-wrap items-start justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-semibold">@Model.Event.Title</h1>
-            <p class="text-sm text-slate-500">@Model.Event.EventDate.ToString("MMM d, yyyy") · @Model.MediaCount items · @Model.GuestCount guests</p>
+            <h1 class="text-2xl font-semibold text-bronze">@Model.Event.Title</h1>
+            <p class="text-sm text-ink-soft">@Model.Event.EventDate.ToString("MMM d, yyyy") · @Model.MediaCount items · @Model.GuestCount guests</p>
         </div>
         <div class="flex gap-2">
             <a asp-page="/E/Gallery" asp-route-slug="@Model.Event.Slug"
                target="_blank"
-               class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">
+               class="rounded-md border border-bronze/30 bg-white px-4 py-2 text-sm text-ink hover:bg-parchment">
                 View gallery
             </a>
             <a asp-page="/E/Slideshow" asp-route-slug="@Model.Event.Slug"
                target="_blank"
-               class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">
+               class="rounded-md border border-bronze/30 bg-white px-4 py-2 text-sm text-ink hover:bg-parchment">
                 Slideshow
             </a>
             <a href="/download/@(Model.Event.Slug).zip"
-               class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+               class="rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
                 Download .zip
             </a>
         </div>
     </div>
 
     <div class="mt-8 grid gap-6 md:grid-cols-2">
-        <div class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 class="text-sm font-medium uppercase tracking-wide text-slate-500">Share link</h2>
+        <div class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-bronze/15">
+            <h2 class="text-sm font-medium uppercase tracking-wide text-ink-soft">Share link</h2>
             <div class="mt-2 flex items-center gap-2">
                 <input readonly value="@Model.ShareUrl"
-                       class="flex-1 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm" />
-                <button type="button" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50"
+                       class="flex-1 rounded-md border border-bronze/30 bg-parchment px-3 py-2 text-sm text-ink" />
+                <button type="button" class="rounded-md border border-bronze/30 bg-white px-3 py-2 text-sm text-ink hover:bg-parchment"
                         onclick="navigator.clipboard.writeText('@Model.ShareUrl')">
                     Copy
                 </button>
             </div>
             <div class="mt-6">
-                <img src="/qr/@(Model.Event.Slug).png" alt="QR code" class="w-64 rounded bg-white p-2 ring-1 ring-slate-200" />
-                <a href="/qr/@(Model.Event.Slug).png" download class="mt-2 inline-block text-sm text-indigo-600 hover:underline">Download QR (PNG)</a>
+                <img src="/qr/@(Model.Event.Slug).png" alt="QR code" class="w-64 rounded bg-white p-2 ring-1 ring-bronze/20" />
+                <a href="/qr/@(Model.Event.Slug).png" download class="mt-2 inline-block text-sm text-bronze hover:underline">Download QR (PNG)</a>
             </div>
         </div>
 
-        <div class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 class="text-sm font-medium uppercase tracking-wide text-slate-500">Settings</h2>
-            <form method="post" asp-page-handler="Settings" class="mt-3 space-y-3 text-sm">
+        <div class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-bronze/15">
+            <h2 class="text-sm font-medium uppercase tracking-wide text-ink-soft">Settings</h2>
+            <form method="post" asp-page-handler="Settings" class="mt-3 space-y-3 text-sm text-ink">
                 <label class="flex items-center gap-2">
                     <input type="checkbox" name="GuestUploadsEnabled" value="true"
                            @(Model.Event.GuestUploadsEnabled ? "checked" : "") />
@@ -70,23 +73,58 @@
                     Comments
                 </label>
                 <button type="submit"
-                        class="rounded-md bg-slate-800 px-3 py-1.5 text-white hover:bg-slate-700">
+                        class="rounded-md bg-bronze px-3 py-1.5 text-white hover:bg-bronze-deep">
                     Save
                 </button>
             </form>
         </div>
     </div>
 
-    <div class="mt-10">
-        <h2 class="text-lg font-semibold">Recent uploads</h2>
-        <div class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-            @foreach (var m in Model.RecentMedia)
-            {
-                <a href="/media/@m.Id/display" target="_blank"
-                   class="aspect-square overflow-hidden rounded-md bg-slate-200 ring-1 ring-slate-200">
-                    <img src="/media/@m.Id/thumb" alt="" class="h-full w-full object-cover" loading="lazy" />
-                </a>
-            }
+    <div class="mt-10"
+         x-data="galleryLightbox({ items: @recentItems })"
+         @@media-added.window="addItem($event.detail)">
+        <h2 class="text-lg font-semibold text-bronze">Recent uploads</h2>
+
+        <div x-show="items.length === 0"
+             class="mt-3 rounded-md border border-dashed border-bronze/40 p-8 text-center text-sm text-ink-soft">
+            No uploads yet.
         </div>
+
+        <div x-show="items.length > 0"
+             class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+            <template x-for="(item, i) in items" :key="item.id">
+                <button type="button" @@click="open(i)"
+                        class="aspect-square overflow-hidden rounded-md bg-white ring-1 ring-bronze/20 focus:outline-none focus:ring-2 focus:ring-bronze">
+                    <img :src="'/media/' + item.id + '/thumb'" alt=""
+                         class="h-full w-full object-cover" loading="lazy" />
+                </button>
+            </template>
+        </div>
+
+        <partial name="_GalleryLightbox" />
     </div>
 </section>
+
+@section Scripts {
+<script src="~/js/gallery-lightbox.js" asp-append-version="true"></script>
+<script src="https://unpkg.com/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+<script>
+(function () {
+    const slug = "@Model.Event.Slug";
+    const conn = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/slideshow")
+        .withAutomaticReconnect()
+        .build();
+    conn.on("mediaAdded", (payload) => {
+        window.dispatchEvent(new CustomEvent("media-added", {
+            detail: {
+                id: payload.mediaId,
+                kind: payload.kind ?? 0,
+                uploaderName: payload.uploaderName ?? null,
+            },
+        }));
+    });
+    conn.start().then(() => conn.invoke("JoinEvent", slug)).catch(console.error);
+})();
+</script>
+}
