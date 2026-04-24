@@ -129,11 +129,18 @@ app.MapRazorPages();
 app.MapControllers();
 app.MapHub<SlideshowHub>("/hubs/slideshow");
 
-// Ensure DB exists on startup (dev-friendly; use migrations in prod)
+// Apply any pending EF Core migrations on every startup.
+// Migrate() is idempotent: it creates the database if it does not exist and
+// then applies every migration that has not yet been applied, so it is safe
+// in both development and production. This runs on every deploy/publish,
+// ensuring the schema is always up-to-date without any manual steps.
+// Note: SQL Server serialises concurrent migration attempts with an application
+// lock, so simultaneous restarts of multiple instances will not corrupt the
+// schema. Startup time is negligible when there are no pending migrations.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.Run();
