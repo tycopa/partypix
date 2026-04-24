@@ -31,6 +31,18 @@
     <Content Update="wwwroot\**\*">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <!-- All appsettings files are managed directly on the server and must not be
+         overwritten by a deployment.  The deploy workflow excludes them from the
+         robocopy mirror (/XF appsettings.json "appsettings.*.json") so any file
+         already present on the server survives subsequent deployments.
+         Marking every variant Never here keeps them out of the publish output
+         entirely, which prevents an accidental overwrite if dotnet publish is
+         run directly against the deploy path, and documents the intent clearly.
+         On a fresh server, copy appsettings.json from the repo and create
+         appsettings.Production.json by hand before starting the site. -->
+    <Content Update="appsettings*.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

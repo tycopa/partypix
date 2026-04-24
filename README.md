@@ -81,6 +81,10 @@ an IIS server automatically on every push to `main` (or manually via
    configured deploy path with `robocopy`, then restarts the pool — causing
    brief downtime during the file sync and application restart.
 
+`appsettings.json` and all `appsettings.*.json` files are excluded from the
+robocopy mirror (`/XF appsettings.json "appsettings.*.json"`) so **no**
+configuration file on the server is ever overwritten or deleted by a deployment.
+
 ### Runner setup
 
 1. On the IIS host, follow the GitHub docs to
@@ -90,7 +94,7 @@ an IIS server automatically on every push to `main` (or manually via
    - Permission to stop/start the IIS Application Pool.
      (`IIS AppPool\<pool-name>` or an administrator account).
 3. Install prerequisites on the host:
-   - **.NET 9 Hosting Bundle** (includes the ASP.NET Core Module for IIS)
+   - **.NET 10 Hosting Bundle** (includes the ASP.NET Core Module for IIS)
    - **Node.js 20+**
 
 ### Required secrets
@@ -152,9 +156,15 @@ Copy the output to the VM (or build on the VM). The publish output includes
 the shipped `web.config` — `<IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>`
 in the csproj prevents publish from overwriting it.
 
+All `appsettings*.json` files are excluded from the publish output
+(`CopyToPublishDirectory=Never` in the csproj) because they are managed
+directly on the server. On a **fresh server**, copy `appsettings.json` from
+the repo into the deploy folder and create `appsettings.Production.json` by
+hand (see § Configure below) before starting the site.
+
 ### 3. Configure
 
-Edit `C:\apps\partypix\appsettings.Production.json`:
+Create (or edit) `C:\apps\partypix\appsettings.Production.json`:
 
 ```json
 {
@@ -166,6 +176,15 @@ Edit `C:\apps\partypix\appsettings.Production.json`:
   "PublicBaseUrl": "https://partypix.example.com"
 }
 ```
+
+> **Important — all `appsettings*.json` files are never overwritten by a
+> deployment.** Both the csproj (`CopyToPublishDirectory=Never`) and the
+> robocopy step in the GitHub Actions workflow
+> (`/XF appsettings.json "appsettings.*.json"`) explicitly exclude them, so
+> every configuration file on the server survives every subsequent deploy.
+>
+> To change a production setting: edit the file directly on the server and
+> restart the IIS Application Pool (or `iisreset`). No re-deploy is required.
 
 If SQL Server is running under a different identity than the IIS app
 pool (the default), grant `IIS AppPool\PartyPix` a SQL login and
