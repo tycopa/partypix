@@ -10,7 +10,7 @@ Built to run on a Windows VM behind a Cloudflare Tunnel.
 
 - **ASP.NET Core 10** (Razor Pages) — hosted **in-process by IIS** via the
   ASP.NET Core Module V2
-- **SQL Server** or **SQLite** via EF Core (SQLite by default)
+- **SQL Server** via EF Core (LocalDB in dev, SQL Server / SQL Express in prod)
 - **SignalR** for the live slideshow and gallery updates
 - **tusdotnet** for resumable chunked uploads (keeps chunks under Cloudflare's
   100 MB body limit)
@@ -44,7 +44,8 @@ scripts/
 
 ## Local development
 
-Prereqs: .NET 10 SDK, Node 20+.
+Prereqs: .NET 10 SDK, Node 20+, SQL Server LocalDB (installed with Visual
+Studio or via the standalone LocalDB installer).
 
 ```powershell
 cd src\PartyPix.Web
@@ -53,9 +54,11 @@ npm run build              # compiles Tailwind → wwwroot/css/site.css
 dotnet run
 ```
 
-App listens on `http://localhost:5000`. SQLite DB and uploads live under
-`src/PartyPix.Web/App_Data/`. Register a host account, create an event,
-scan the QR code on your phone, and test the full flow end-to-end.
+App listens on `http://localhost:5000`. The dev connection string targets
+`(localdb)\MSSQLLocalDB`; the database is created on first run. Uploads
+and logs live under `src/PartyPix.Web/App_Data/`. Register a host account,
+create an event, scan the QR code on your phone, and test the full flow
+end-to-end.
 
 Tailwind watcher (in a second terminal):
 ```powershell
@@ -82,7 +85,9 @@ Then install:
   registers. If you install it first, run
   `dotnet-hosting-10.0.0-win.exe OPT_NO_SHARED_CONFIG_CHECK=1` or repair it
   after IIS is on.
-- **SQL Server Express** (optional; SQLite works fine for small events)
+- **SQL Server Express** (or a full SQL Server instance) — required.
+  Create an empty database named `PartyPix` (or let the app create it via
+  `EnsureCreated` on first run).
 - **ffmpeg** on PATH (for the eventual video pipeline — not required for v0.1)
 - **cloudflared** for Windows
 
@@ -106,12 +111,16 @@ Edit `C:\apps\partypix\appsettings.Production.json`:
   "ConnectionStrings": {
     "Default": "Server=localhost\\SQLEXPRESS;Database=PartyPix;Trusted_Connection=True;TrustServerCertificate=True"
   },
-  "Database": { "Provider": "SqlServer" },
   "Storage": { "RootPath": "D:\\partypix-media" },
   "Tus":     { "TempPath": "D:\\partypix-tus", "MaxUploadBytes": 524288000 },
   "PublicBaseUrl": "https://partypix.example.com"
 }
 ```
+
+If SQL Server is running under a different identity than the IIS app
+pool (the default), grant `IIS AppPool\PartyPix` a SQL login and
+`db_owner` on the `PartyPix` database, or use a SQL auth connection
+string with `User Id=... ;Password=...` instead of `Trusted_Connection`.
 
 IIS handles port binding; don't set a Kestrel endpoint here.
 
@@ -127,8 +136,8 @@ The script:
   `startMode=AlwaysRunning` so the app doesn't cold-start after idle.
 - Creates a site **PartyPix** bound to `127.0.0.1:5000`, so the only way to
   reach it from outside the VM is cloudflared.
-- Grants `IIS AppPool\PartyPix` Modify on the publish folder so SQLite,
-  App_Data logs, and any in-folder storage paths work.
+- Grants `IIS AppPool\PartyPix` Modify on the publish folder so
+  App_Data logs and any in-folder storage/tus paths work.
 
 If `Storage:RootPath` or `Tus:TempPath` point outside the publish folder
 (e.g. `D:\partypix-media`), grant `IIS AppPool\PartyPix` Modify on those

@@ -28,11 +28,6 @@ appsettings.Production.json
 App_Data/
 uploads/
 media-store/
-*.db
-*.db-journal
-*.sqlite
-*.sqlite-journal
-
 # Node / Tailwind
 node_modules/
 wwwroot/css/site.css

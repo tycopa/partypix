@@ -2,7 +2,7 @@
 .SYNOPSIS
     Creates (or recreates) the PartyPix IIS app pool and site, binds it to
     127.0.0.1:<Port>, and grants the app pool identity write access to the
-    published folder so SQLite and App_Data work out of the box.
+    published folder so App_Data logs and tus temp files work out of the box.
 
 .DESCRIPTION
     Run on the Windows VM after:

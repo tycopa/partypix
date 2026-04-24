@@ -26,17 +26,10 @@ builder.Host.UseSerilog();
 // IIS terminates HTTP and forwards into the app; Kestrel is not used.
 
 // -- Database --------------------------------------------------------------
-var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
 var connStr = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("ConnectionStrings:Default not configured");
 
-builder.Services.AddDbContext<AppDbContext>(opts =>
-{
-    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-        opts.UseSqlServer(connStr);
-    else
-        opts.UseSqlite(connStr);
-});
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlServer(connStr));
 
 // -- Identity (hosts only) ------------------------------------------------
 builder.Services.AddDefaultIdentity<AppUser>(options =>
