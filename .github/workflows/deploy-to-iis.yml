@@ -9,7 +9,7 @@
 # RUNNER REQUIREMENTS:
 #   • A GitHub self-hosted runner registered on the Windows IIS host
 #     (https://docs.github.com/en/actions/hosting-your-own-runners/adding-self-hosted-runners)
-#   • .NET 9 Hosting Bundle installed (includes the ASP.NET Core Module for IIS)
+#   • .NET 10 Hosting Bundle installed (includes the ASP.NET Core Module for IIS)
 #   • Node.js 20+ installed
 #   • The runner service account must have write access to IIS_DEPLOY_PATH
 #     and permission to stop/start the IIS Application Pool
@@ -60,10 +60,10 @@ jobs:
         run: npm run build
 
       # ── 3. .NET publish ──────────────────────────────────────────────────────
-      - name: Set up .NET 9
+      - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore NuGet packages
         run: dotnet restore PartyPix.sln
