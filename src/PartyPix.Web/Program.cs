@@ -156,6 +156,23 @@ using (var scope = app.Services.CreateScope())
     {
         roleMgr.CreateAsync(new IdentityRole("Admin")).GetAwaiter().GetResult();
     }
+
+    // One-shot rescue for accounts that registered before the role gate
+    // shipped: if no user is currently in the Admin role and exactly one
+    // user account exists, promote that lone account so the deployer can
+    // actually invite others. Multi-user installs are left alone — picking
+    // the admin in that case is a deliberate decision, not something to
+    // auto-resolve.
+    var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var existingAdmins = userMgr.GetUsersInRoleAsync("Admin").GetAwaiter().GetResult();
+    if (existingAdmins.Count == 0)
+    {
+        var allUsers = userMgr.Users.ToList();
+        if (allUsers.Count == 1)
+        {
+            userMgr.AddToRoleAsync(allUsers[0], "Admin").GetAwaiter().GetResult();
+        }
+    }
 }
 
 app.Run();
