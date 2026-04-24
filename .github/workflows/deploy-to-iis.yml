@@ -1,0 +1,121 @@
+# Deploy PartyPix to IIS via a Windows self-hosted runner
+#
+# REQUIRED SECRETS (Settings → Secrets and variables → Actions):
+#   IIS_DEPLOY_PATH   – Absolute path on the server where IIS serves the app.
+#                       Example: C:\inetpub\wwwroot\partypix
+#   IIS_APP_POOL_NAME – Name of the IIS Application Pool for the site.
+#                       Example: PartyPix
+#
+# RUNNER REQUIREMENTS:
+#   • A GitHub self-hosted runner registered on the Windows IIS host
+#     (https://docs.github.com/en/actions/hosting-your-own-runners/adding-self-hosted-runners)
+#   • .NET 9 Hosting Bundle installed (includes the ASP.NET Core Module for IIS)
+#   • Node.js 20+ installed
+#   • The runner service account must have write access to IIS_DEPLOY_PATH
+#     and permission to stop/start the IIS Application Pool
+#
+# IIS SITE ASSUMPTIONS:
+#   • An IIS site and Application Pool already exist and point at IIS_DEPLOY_PATH
+#   • The Application Pool identity has write access to App_Data/ inside that path
+#   • The .NET CLR version for the pool should be set to "No Managed Code"
+#     (ASP.NET Core is hosted out-of-process via the ASP.NET Core Module)
+#   • web.config is included in the published output (dotnet publish generates it)
+
+name: Deploy to IIS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and deploy to IIS
+    runs-on: [self-hosted, windows, iis]   # Windows self-hosted runner on the IIS host
+
+    # Least-privilege token: the job only needs to read repository contents.
+    permissions:
+      contents: read
+
+    environment: production
+
+    steps:
+      # ── 1. Source ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Front-end assets (Tailwind CSS) ──────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies
+        working-directory: src/PartyPix.Web
+        run: npm install
+
+      - name: Build Tailwind CSS
+        working-directory: src/PartyPix.Web
+        run: npm run build
+
+      # ── 3. .NET publish ──────────────────────────────────────────────────────
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore NuGet packages
+        run: dotnet restore PartyPix.sln
+
+      - name: Publish application
+        run: >
+          dotnet publish src/PartyPix.Web/PartyPix.Web.csproj
+          --configuration Release
+          --output "${{ runner.temp }}\publish"
+          --no-restore
+
+      # ── 4. Deploy to IIS ─────────────────────────────────────────────────────
+      - name: Stop IIS Application Pool
+        shell: powershell
+        run: |
+          Import-Module WebAdministration -ErrorAction Stop
+          $pool = "${{ secrets.IIS_APP_POOL_NAME }}"
+          if ((Get-WebAppPoolState -Name $pool).Value -ne 'Stopped') {
+              Stop-WebAppPool -Name $pool
+              # Wait until the pool has fully stopped (max 30 s)
+              $deadline = (Get-Date).AddSeconds(30)
+              while ((Get-WebAppPoolState -Name $pool).Value -ne 'Stopped') {
+                  if ((Get-Date) -gt $deadline) {
+                      throw "Timed out waiting for app pool '$pool' to stop."
+                  }
+                  Start-Sleep -Milliseconds 500
+              }
+          }
+          Write-Host "App pool '$pool' is stopped."
+
+      - name: Sync published files to IIS deploy path
+        shell: powershell
+        run: |
+          $src  = "${{ runner.temp }}\publish"
+          $dest = "${{ secrets.IIS_DEPLOY_PATH }}"
+
+          # Robocopy: mirror publish output → deploy path, excluding runtime data.
+          # /MIR intentionally removes destination files not present in the
+          # source so each deployment reflects the exact published output.
+          # App_Data (SQLite DB, uploads) and logs are excluded from mirroring
+          # so runtime data is never deleted.
+          robocopy $src $dest /MIR /NP /NFL /NDL /XD App_Data logs /XF *.log
+          # Robocopy exit codes 0-7 are success (8+ indicate copy errors)
+          if ($LASTEXITCODE -ge 8) {
+              throw "robocopy failed with exit code $LASTEXITCODE"
+          }
+          Write-Host "Files synced to $dest"
+
+      - name: Start IIS Application Pool
+        shell: powershell
+        run: |
+          Import-Module WebAdministration -ErrorAction Stop
+          $pool = "${{ secrets.IIS_APP_POOL_NAME }}"
+          Start-WebAppPool -Name $pool
+          Write-Host "App pool '$pool' started."
