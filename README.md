@@ -99,8 +99,8 @@ Add these in **Settings → Secrets and variables → Actions**:
 
 | Secret | Example value | Description |
 |---|---|---|
-| `IIS_DEPLOY_PATH` | `C:\inetpub\wwwroot\partypix` | Absolute path IIS serves the app from |
-| `IIS_APP_POOL_NAME` | `PartyPix` | Name of the IIS Application Pool |
+| `IIS_DEPLOY_PATH` | `C:\daubery\partypix` | Absolute path IIS serves the app from |
+| `IIS_APP_POOL_NAME` | `partypix` | Name of the IIS Application Pool |
 
 ### IIS site assumptions
 
