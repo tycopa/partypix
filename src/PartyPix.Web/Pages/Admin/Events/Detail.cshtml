@@ -22,7 +22,7 @@
                class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">
                 Slideshow
             </a>
-            <a href="/download/@Model.Event.Slug.zip"
+            <a href="/download/@(Model.Event.Slug).zip"
                class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
                 Download .zip
             </a>
@@ -41,8 +41,8 @@
                 </button>
             </div>
             <div class="mt-6">
-                <img src="/qr/@Model.Event.Slug.png" alt="QR code" class="w-64 rounded bg-white p-2 ring-1 ring-slate-200" />
-                <a href="/qr/@Model.Event.Slug.png" download class="mt-2 inline-block text-sm text-indigo-600 hover:underline">Download QR (PNG)</a>
+                <img src="/qr/@(Model.Event.Slug).png" alt="QR code" class="w-64 rounded bg-white p-2 ring-1 ring-slate-200" />
+                <a href="/qr/@(Model.Event.Slug).png" download class="mt-2 inline-block text-sm text-indigo-600 hover:underline">Download QR (PNG)</a>
             </div>
         </div>
 

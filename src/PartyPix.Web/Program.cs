@@ -63,7 +63,7 @@ builder.Services.AddControllers();
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    o.KnownNetworks.Clear();
+    o.KnownIPNetworks.Clear();
     o.KnownProxies.Clear();
 });
 
@@ -102,7 +102,7 @@ Directory.CreateDirectory(tusTempPath);
 app.MapTus("/api/uploads", async httpContext => new DefaultTusConfiguration
 {
     Store = new TusDiskStore(tusTempPath),
-    MaxAllowedUploadSizeInBytes = app.Configuration.GetValue<long?>("Tus:MaxUploadBytes"),
+    MaxAllowedUploadSizeInBytes = app.Configuration.GetValue<int?>("Tus:MaxUploadBytes"),
     Events = new Events
     {
         OnFileCompleteAsync = async ctx =>
