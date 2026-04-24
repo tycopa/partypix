@@ -8,7 +8,7 @@ Built to run on a Windows VM behind a Cloudflare Tunnel.
 
 ## Stack
 
-- **ASP.NET Core 9** (Razor Pages) — hosted **in-process by IIS** via the
+- **ASP.NET Core 10** (Razor Pages) — hosted **in-process by IIS** via the
   ASP.NET Core Module V2
 - **SQL Server** or **SQLite** via EF Core (SQLite by default)
 - **SignalR** for the live slideshow and gallery updates
@@ -44,7 +44,7 @@ scripts/
 
 ## Local development
 
-Prereqs: .NET 9 SDK, Node 20+.
+Prereqs: .NET 10 SDK, Node 20+.
 
 ```powershell
 cd src\PartyPix.Web
@@ -77,10 +77,10 @@ Install-WindowsFeature `
 
 Then install:
 
-- **.NET 9 Hosting Bundle** — provides the ASP.NET Core Module V2 that IIS
+- **.NET 10 Hosting Bundle** — provides the ASP.NET Core Module V2 that IIS
   uses to run the app in-process. Install *after* IIS so the module
   registers. If you install it first, run
-  `dotnet-hosting-9.0.0-win.exe OPT_NO_SHARED_CONFIG_CHECK=1` or repair it
+  `dotnet-hosting-10.0.0-win.exe OPT_NO_SHARED_CONFIG_CHECK=1` or repair it
   after IIS is on.
 - **SQL Server Express** (optional; SQLite works fine for small events)
 - **ffmpeg** on PATH (for the eventual video pipeline — not required for v0.1)

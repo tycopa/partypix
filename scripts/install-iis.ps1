@@ -8,7 +8,7 @@
     Run on the Windows VM after:
       1. Installing IIS (Web-Server) with the WebSockets feature
          (Web-WebSockets) enabled.
-      2. Installing the .NET 9 Hosting Bundle (provides AspNetCoreModuleV2).
+      2. Installing the .NET 10 Hosting Bundle (provides AspNetCoreModuleV2).
       3. Publishing the app: dotnet publish -c Release -o <PublishPath>.
 
     The site binds to 127.0.0.1 so the process is only reachable via
