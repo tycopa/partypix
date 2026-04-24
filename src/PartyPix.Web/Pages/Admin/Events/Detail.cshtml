@@ -135,7 +135,7 @@
                 <a href="/download/@(Model.Event.Slug).zip"
                    @@click="downloaded = true"
                    class="mt-3 inline-block rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
-                    Download @Model.Event.Slug.zip
+                    Download @(Model.Event.Slug).zip
                 </a>
                 <label class="mt-3 flex items-center gap-2 text-sm text-ink">
                     <input type="checkbox" x-model="downloaded"
