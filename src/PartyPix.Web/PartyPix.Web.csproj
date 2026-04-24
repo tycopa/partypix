@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>partypix-dev-secrets</UserSecretsId>
     <RootNamespace>PartyPix.Web</RootNamespace>
+    <!-- IIS in-process hosting via the ASP.NET Core Module V2. We ship our own
+         web.config so publish doesn't overwrite requestLimits / webSocket tweaks. -->
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
   </PropertyGroup>
 
   <ItemGroup>

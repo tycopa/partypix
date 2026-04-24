@@ -22,8 +22,8 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-// Run as Windows Service when invoked by the SCM
-builder.Host.UseWindowsService(o => o.ServiceName = "PartyPix");
+// Hosted in-process by IIS via the ASP.NET Core Module (see web.config).
+// IIS terminates HTTP and forwards into the app; Kestrel is not used.
 
 // -- Database --------------------------------------------------------------
 var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
@@ -74,11 +74,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
-// Allow large uploads (tus still chunks below Cloudflare's 100MB limit)
-builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(o =>
-{
-    o.Limits.MaxRequestBodySize = builder.Configuration.GetValue<long?>("Tus:MaxUploadBytes") ?? 524288000;
-});
+// Allow large uploads. With in-process IIS hosting this IISServerOptions
+// value governs body size; the matching web.config value is
+// system.webServer/security/requestFiltering/requestLimits/@maxAllowedContentLength.
+// tus chunks stay under Cloudflare's 100MB body limit regardless.
 builder.Services.Configure<IISServerOptions>(o =>
 {
     o.MaxRequestBodySize = builder.Configuration.GetValue<long?>("Tus:MaxUploadBytes") ?? 524288000;

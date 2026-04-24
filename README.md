@@ -8,7 +8,8 @@ Built to run on a Windows VM behind a Cloudflare Tunnel.
 
 ## Stack
 
-- **ASP.NET Core 9** (Razor Pages) — served by Kestrel as a Windows Service
+- **ASP.NET Core 9** (Razor Pages) — hosted **in-process by IIS** via the
+  ASP.NET Core Module V2
 - **SQL Server** or **SQLite** via EF Core (SQLite by default)
 - **SignalR** for the live slideshow and gallery updates
 - **tusdotnet** for resumable chunked uploads (keeps chunks under Cloudflare's
@@ -35,8 +36,9 @@ src/PartyPix.Web/
     E/                        Guest: welcome → gallery → upload → slideshow
   Styles/site.css             Tailwind entry
   wwwroot/css/site.css        Tailwind output (gitignored)
+  web.config                  IIS hosting config (AspNetCoreModuleV2)
 scripts/
-  install-service.ps1         Register as a Windows Service
+  install-iis.ps1             Create IIS app pool + site + folder ACLs
   cloudflared-config.example.yml
 ```
 
@@ -64,13 +66,25 @@ npm run dev
 
 ### 1. Prepare the VM
 
-- Install **.NET 9 Hosting Bundle** (or the ASP.NET Core Runtime if you're
-  not using IIS)
-- Install **SQL Server Express** if you want SQL Server (optional; SQLite
-  works fine for small/medium events)
-- Install **ffmpeg** on PATH (for the eventual video pipeline — not required
-  for v0.1)
-- Install **cloudflared** for Windows
+Enable IIS with the WebSocket feature (PowerShell, elevated):
+
+```powershell
+Install-WindowsFeature `
+    Web-Server, Web-WebSockets, Web-Http-Logging, Web-Stat-Compression, `
+    Web-Static-Content, Web-Default-Doc, Web-Http-Errors, `
+    Web-Request-Monitor, Web-Filtering
+```
+
+Then install:
+
+- **.NET 9 Hosting Bundle** — provides the ASP.NET Core Module V2 that IIS
+  uses to run the app in-process. Install *after* IIS so the module
+  registers. If you install it first, run
+  `dotnet-hosting-9.0.0-win.exe OPT_NO_SHARED_CONFIG_CHECK=1` or repair it
+  after IIS is on.
+- **SQL Server Express** (optional; SQLite works fine for small events)
+- **ffmpeg** on PATH (for the eventual video pipeline — not required for v0.1)
+- **cloudflared** for Windows
 
 ### 2. Publish
 
@@ -79,7 +93,9 @@ From your dev box:
 dotnet publish src\PartyPix.Web\PartyPix.Web.csproj -c Release -o C:\apps\partypix
 ```
 
-Copy the output to the VM (or build on the VM).
+Copy the output to the VM (or build on the VM). The publish output includes
+the shipped `web.config` — `<IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>`
+in the csproj prevents publish from overwriting it.
 
 ### 3. Configure
 
@@ -93,21 +109,35 @@ Edit `C:\apps\partypix\appsettings.Production.json`:
   "Database": { "Provider": "SqlServer" },
   "Storage": { "RootPath": "D:\\partypix-media" },
   "Tus":     { "TempPath": "D:\\partypix-tus", "MaxUploadBytes": 524288000 },
-  "PublicBaseUrl": "https://partypix.example.com",
-  "Kestrel": {
-    "Endpoints": { "Http": { "Url": "http://127.0.0.1:5000" } }
-  }
+  "PublicBaseUrl": "https://partypix.example.com"
 }
 ```
 
-### 4. Install as a Windows Service
+IIS handles port binding; don't set a Kestrel endpoint here.
+
+### 4. Create the IIS site
 
 ```powershell
-.\scripts\install-service.ps1 -PublishPath C:\apps\partypix
+.\scripts\install-iis.ps1 -PublishPath C:\apps\partypix -Port 5000
 ```
 
-The script binds Kestrel to `127.0.0.1:5000` so the process is only
-reachable via cloudflared.
+The script:
+- Creates an app pool **PartyPix** with `managedRuntimeVersion=""` (No Managed
+  Code — required for ASP.NET Core via AspNetCoreModuleV2) and
+  `startMode=AlwaysRunning` so the app doesn't cold-start after idle.
+- Creates a site **PartyPix** bound to `127.0.0.1:5000`, so the only way to
+  reach it from outside the VM is cloudflared.
+- Grants `IIS AppPool\PartyPix` Modify on the publish folder so SQLite,
+  App_Data logs, and any in-folder storage paths work.
+
+If `Storage:RootPath` or `Tus:TempPath` point outside the publish folder
+(e.g. `D:\partypix-media`), grant `IIS AppPool\PartyPix` Modify on those
+folders too.
+
+Verify it's alive:
+```powershell
+curl http://127.0.0.1:5000/
+```
 
 ### 5. Configure the Cloudflare Tunnel
 
@@ -140,6 +170,20 @@ under the limit, and uploads resume automatically on flaky cellular.
 
 No other config is needed on the Cloudflare side; tus is just HTTP `PATCH`
 requests.
+
+## Upload size limits on IIS
+
+Three knobs have to agree or uploads will 413:
+
+| Layer | Setting | Value |
+|---|---|---|
+| IIS request filtering | `web.config` → `requestLimits/@maxAllowedContentLength` | 524288000 |
+| ASP.NET Core | `IISServerOptions.MaxRequestBodySize` (`Program.cs`) | 524288000 |
+| Cloudflare (edge) | plan-dependent | 100 MB (Free/Pro) |
+
+`Tus:MaxUploadBytes` in `appsettings.json` drives the ASP.NET Core limit and
+the tus ceiling; it must be ≤ the `web.config` value. The web.config value
+is the hard IIS ceiling and needs to be set manually.
 
 ## Media & storage layout
 
