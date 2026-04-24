@@ -94,7 +94,7 @@ configuration file on the server is ever overwritten or deleted by a deployment.
    - Permission to stop/start the IIS Application Pool.
      (`IIS AppPool\<pool-name>` or an administrator account).
 3. Install prerequisites on the host:
-   - **.NET 9 Hosting Bundle** (includes the ASP.NET Core Module for IIS)
+   - **.NET 10 Hosting Bundle** (includes the ASP.NET Core Module for IIS)
    - **Node.js 20+**
 
 ### Required secrets
