@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PartyPix.Web.Data;
 using PartyPix.Web.Data.Entities;
+using PartyPix.Web.Services;
 
 namespace PartyPix.Web.Pages.Admin.Events;
 
@@ -12,6 +13,7 @@ namespace PartyPix.Web.Pages.Admin.Events;
 public class DetailModel(
     AppDbContext db,
     UserManager<AppUser> users,
+    IStorageService storage,
     IConfiguration config) : PageModel
 {
     public Event Event { get; private set; } = default!;
@@ -28,6 +30,42 @@ public class DetailModel(
         if (ev is null) return NotFound();
         await HydrateAsync(ev, ct);
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(
+        string slug,
+        [FromForm] string confirmSlug,
+        CancellationToken ct)
+    {
+        var ev = await LoadAsync(slug, ct);
+        if (ev is null) return NotFound();
+
+        // Typed-slug confirmation so an accidental submit can't destroy data.
+        if (!string.Equals(confirmSlug, slug, StringComparison.Ordinal))
+        {
+            TempData["DeleteError"] = "Event name didn't match — nothing was deleted.";
+            return RedirectToPage(new { slug });
+        }
+
+        // Pull the file keys before the DB cascade removes the Media rows.
+        var mediaKeys = await db.Media
+            .Where(m => m.EventId == ev.Id)
+            .Select(m => new { m.StorageKey, m.DisplayKey, m.ThumbnailKey, m.PosterKey })
+            .ToListAsync(ct);
+
+        foreach (var row in mediaKeys)
+        {
+            foreach (var key in new[] { row.ThumbnailKey, row.DisplayKey, row.PosterKey, row.StorageKey })
+            {
+                if (string.IsNullOrEmpty(key)) continue;
+                try { await storage.DeleteAsync(key, ct); }
+                catch { /* best-effort; orphaned files are acceptable vs. failing the whole delete */ }
+            }
+        }
+
+        db.Events.Remove(ev);
+        await db.SaveChangesAsync(ct);
+        return RedirectToPage("/Admin/Index");
     }
 
     public async Task<IActionResult> OnPostSettingsAsync(

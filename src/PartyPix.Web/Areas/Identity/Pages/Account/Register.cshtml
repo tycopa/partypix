@@ -1,12 +1,19 @@
 @page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Create an account";
+    ViewData["Title"] = Model.IsAdminInvite ? "Add user" : "Create an account";
+    var heading = Model.IsAdminInvite ? "Add a user" : "Create an account";
+    var subheading = Model.IsAdminInvite
+        ? "New accounts can only be created by an admin."
+        : (Model.IsBootstrap ? "Setting up the first admin account." : "");
 }
 
 <section class="mx-auto max-w-md px-4 py-16">
-    <h1 class="text-3xl font-semibold tracking-tight text-bronze">Create an account</h1>
-    <p class="mt-1 text-sm text-ink-soft">Host your first event in minutes.</p>
+    <h1 class="text-3xl font-semibold tracking-tight text-bronze">@heading</h1>
+    @if (!string.IsNullOrEmpty(subheading))
+    {
+        <p class="mt-1 text-sm text-ink-soft">@subheading</p>
+    }
 
     <form method="post" class="mt-8 space-y-4">
         <div asp-validation-summary="All" class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 empty:hidden"></div>
@@ -35,12 +42,15 @@
 
         <button type="submit"
                 class="w-full rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
-            Create account
+            @(Model.IsAdminInvite ? "Create user" : "Create account")
         </button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-ink-soft">
-        Already have an account?
-        <a asp-page="./Login" class="font-medium text-bronze hover:underline">Sign in</a>
-    </p>
+    @if (!Model.IsAdminInvite)
+    {
+        <p class="mt-6 text-center text-sm text-ink-soft">
+            Already have an account?
+            <a asp-page="./Login" class="font-medium text-bronze hover:underline">Sign in</a>
+        </p>
+    }
 </section>

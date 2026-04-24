@@ -39,7 +39,13 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
         options.Password.RequiredLength = 10;
         options.Password.RequireNonAlphanumeric = false;
     })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
+
+// DELETE from the admin lightbox carries the antiforgery token in this
+// header instead of a form field. AddAntiforgery is called implicitly by
+// AddRazorPages; we just rename the header so our fetch() call is explicit.
+builder.Services.AddAntiforgery(o => o.HeaderName = "X-CSRF-TOKEN");
 
 // -- App services ---------------------------------------------------------
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
@@ -141,6 +147,15 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // Ensure the Admin role exists so the first-registered user can be
+    // placed in it as the bootstrap admin. Registration is otherwise
+    // locked to signed-in admins (see Areas/Identity/Pages/Account/Register).
+    var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    if (!roleMgr.RoleExistsAsync("Admin").GetAwaiter().GetResult())
+    {
+        roleMgr.CreateAsync(new IdentityRole("Admin")).GetAwaiter().GetResult();
+    }
 }
 
 app.Run();

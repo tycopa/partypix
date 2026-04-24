@@ -5,16 +5,20 @@
     ViewData["Title"] = Model.Event.Title;
     var recentItems = JsonSerializer.Serialize(
         Model.RecentMedia.Select(i => new { id = i.Id, kind = i.Kind, uploaderName = i.UploaderName }));
+    var deleteError = TempData["DeleteError"] as string;
 }
 
-<section class="mx-auto max-w-5xl px-4 py-10">
+@Html.AntiForgeryToken()
+
+<section class="mx-auto max-w-5xl px-4 py-10"
+         x-data="{ confirmDelete: false, typed: '', downloaded: false }">
     <a asp-page="/Admin/Index" class="text-sm text-ink-soft hover:text-bronze hover:underline">&larr; All events</a>
     <div class="mt-2 flex flex-wrap items-start justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold text-bronze">@Model.Event.Title</h1>
             <p class="text-sm text-ink-soft">@Model.Event.EventDate.ToString("MMM d, yyyy") · @Model.MediaCount items · @Model.GuestCount guests</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             <a asp-page="/E/Gallery" asp-route-slug="@Model.Event.Slug"
                target="_blank"
                class="rounded-md border border-bronze/30 bg-white px-4 py-2 text-sm text-ink hover:bg-parchment">
@@ -29,8 +33,17 @@
                class="rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
                 Download .zip
             </a>
+            <button type="button" @@click="confirmDelete = true"
+                    class="rounded-md border border-red-700/40 bg-white px-4 py-2 text-sm text-red-700 hover:bg-red-50">
+                Delete event
+            </button>
         </div>
     </div>
+
+    @if (!string.IsNullOrEmpty(deleteError))
+    {
+        <div class="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">@deleteError</div>
+    }
 
     <div class="mt-8 grid gap-6 md:grid-cols-2">
         <div class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-bronze/15">
@@ -81,7 +94,7 @@
     </div>
 
     <div class="mt-10"
-         x-data="galleryLightbox({ items: @recentItems })"
+         x-data="galleryLightbox({ items: @recentItems, canDelete: true })"
          @@media-added.window="addItem($event.detail)">
         <h2 class="text-lg font-semibold text-bronze">Recent uploads</h2>
 
@@ -102,6 +115,54 @@
         </div>
 
         <partial name="_GalleryLightbox" />
+    </div>
+
+    <!-- Delete-event confirmation modal -->
+    <div x-cloak x-show="confirmDelete"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+         @@keydown.escape.window="confirmDelete = false"
+         @@click.self="confirmDelete = false">
+        <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl ring-1 ring-bronze/20">
+            <h3 class="text-lg font-semibold text-red-700">Delete this event?</h3>
+            <p class="mt-2 text-sm text-ink">
+                This permanently removes the event, all uploaded photos, guest
+                sessions, and the QR link. There is no undo.
+            </p>
+
+            <div class="mt-5 rounded-md border border-bronze/30 bg-parchment/70 p-4">
+                <p class="text-sm font-medium text-ink">Step 1 — download the ZIP</p>
+                <p class="mt-1 text-xs text-ink-soft">Save a local copy of every original photo before deletion.</p>
+                <a href="/download/@(Model.Event.Slug).zip"
+                   @@click="downloaded = true"
+                   class="mt-3 inline-block rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
+                    Download @Model.Event.Slug.zip
+                </a>
+                <label class="mt-3 flex items-center gap-2 text-sm text-ink">
+                    <input type="checkbox" x-model="downloaded"
+                           class="rounded border-bronze/40 text-bronze focus:ring-bronze" />
+                    I&rsquo;ve saved the ZIP.
+                </label>
+            </div>
+
+            <form method="post" asp-page-handler="Delete" class="mt-5 space-y-3">
+                <p class="text-sm font-medium text-ink">Step 2 — confirm by typing the event slug</p>
+                <p class="text-xs text-ink-soft">Type <code class="rounded bg-parchment px-1 font-mono">@Model.Event.Slug</code> exactly.</p>
+                <input type="text" name="confirmSlug" x-model="typed" autocomplete="off"
+                       class="block w-full rounded-md border border-bronze/30 bg-white px-3 py-2 text-sm text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze" />
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" @@click="confirmDelete = false; typed = ''; downloaded = false"
+                            class="rounded-md border border-bronze/30 bg-white px-4 py-2 text-sm text-ink hover:bg-parchment">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            :disabled="!downloaded || typed !== '@Model.Event.Slug'"
+                            class="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50">
+                        Delete permanently
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </section>
 

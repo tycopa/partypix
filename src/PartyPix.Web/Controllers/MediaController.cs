@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PartyPix.Web.Data;
@@ -18,6 +19,31 @@ public class MediaController(
     IStorageService storage,
     GuestSessionAccessor guests) : ControllerBase
 {
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var m = await db.Media.Include(x => x.Event).FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (m is null || m.Event is null) return NotFound();
+
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var isHost = m.Event.HostUserId == userId;
+        var isAdmin = User.IsInRole("Admin");
+        if (!isHost && !isAdmin) return Forbid();
+
+        foreach (var key in new[] { m.ThumbnailKey, m.DisplayKey, m.PosterKey, m.StorageKey })
+        {
+            if (string.IsNullOrEmpty(key)) continue;
+            try { await storage.DeleteAsync(key, ct); }
+            catch { /* ignore individual file errors; row removal below still proceeds */ }
+        }
+
+        db.Media.Remove(m);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     [HttpGet("{id:guid}/thumb")]
     public Task<IActionResult> Thumb(Guid id, CancellationToken ct) => ServeAsync(id, Variant.Thumb, ct);
 

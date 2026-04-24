@@ -19,14 +19,17 @@
                 @if (SignInManager.IsSignedIn(User))
                 {
                     <a href="/Admin" class="text-ink hover:text-bronze hover:underline">Dashboard</a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a href="/Identity/Account/Register" class="text-ink hover:text-bronze hover:underline">Add user</a>
+                    }
                     <form method="post" asp-page="/Account/Logout" asp-area="Identity" class="inline">
                         <button type="submit" class="text-ink-soft hover:text-bronze">Sign out</button>
                     </form>
                 }
                 else
                 {
-                    <a href="/Identity/Account/Login" class="text-ink hover:text-bronze hover:underline">Sign in</a>
-                    <a href="/Identity/Account/Register" class="rounded-md bg-bronze px-3 py-1.5 text-white hover:bg-bronze-deep">Get started</a>
+                    <a href="/Identity/Account/Login" class="rounded-md bg-bronze px-3 py-1.5 text-white hover:bg-bronze-deep">Sign in</a>
                 }
             </nav>
         </div>

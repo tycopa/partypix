@@ -8,13 +8,25 @@
      @@keydown.arrow-right.window="next()"
      @@click.self="close()"
      class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-    <button type="button" @@click.stop="close()" aria-label="Close"
-            class="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" class="h-6 w-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18L18 6" />
-        </svg>
-    </button>
+    <div class="absolute right-4 top-4 flex items-center gap-2">
+        <button type="button" x-show="canDelete && index !== null"
+                @@click.stop="remove()"
+                :disabled="deleting"
+                aria-label="Delete photo"
+                class="rounded-full bg-red-600/80 p-2 text-white hover:bg-red-600 disabled:opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" class="h-5 w-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+            </svg>
+        </button>
+        <button type="button" @@click.stop="close()" aria-label="Close"
+                class="rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" class="h-6 w-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18L18 6" />
+            </svg>
+        </button>
+    </div>
 
     <button type="button" @@click.stop="prev()" aria-label="Previous"
             x-show="items.length > 1"
