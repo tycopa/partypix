@@ -46,14 +46,19 @@ function uploader() {
             for (const file of fileList) this.upload(file);
         },
         upload(file) {
-            const entry = {
-                id: this.nextId++,
+            const id = this.nextId++;
+            this.files.unshift({
+                id,
                 name: file.name,
                 pct: 0,
                 status: "queued",
-            };
-            this.files.unshift(entry);
+            });
             const self = this;
+            // Look up the entry through self.files inside each callback so
+            // mutations go through Alpine's proxy. Holding a closure over the
+            // object passed to unshift() mutates the raw object and bypasses
+            // reactivity, which is why the status used to get stuck on "queued".
+            const entry = () => self.files.find(f => f.id === id);
             const upload = new tus.Upload(file, {
                 endpoint: "/api/uploads",
                 retryDelays: [0, 1000, 3000, 5000, 10000],
@@ -64,16 +69,21 @@ function uploader() {
                     eventSlug: self.slug,
                 },
                 onError(err) {
-                    entry.status = "failed";
+                    const e = entry();
+                    if (e) e.status = "failed";
                     console.error(err);
                 },
                 onProgress(sent, total) {
-                    entry.pct = Math.round((sent / total) * 100);
-                    entry.status = "uploading";
+                    const e = entry();
+                    if (!e) return;
+                    e.pct = Math.round((sent / total) * 100);
+                    e.status = "uploading";
                 },
                 onSuccess() {
-                    entry.pct = 100;
-                    entry.status = "done";
+                    const e = entry();
+                    if (!e) return;
+                    e.pct = 100;
+                    e.status = "done";
                 },
             });
             upload.start();
