@@ -34,6 +34,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Opt every JavaScript action into Node.js 24. Node 20 is deprecated
+# on GitHub-hosted/self-hosted runners (forced default June 2026,
+# removed September 2026), so this silences the runner warning without
+# depending on every third-party action having shipped a @v5 yet.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   deploy:
     runs-on: self-hosted
