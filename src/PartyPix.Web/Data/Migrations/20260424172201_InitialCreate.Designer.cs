@@ -616,7 +616,7 @@ namespace PartyPix.Web.Data.Migrations
                     b.HasOne("PartyPix.Web.Data.Entities.Album", "Album")
                         .WithMany("Media")
                         .HasForeignKey("AlbumId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.ClientSetNull);
 
                     b.HasOne("PartyPix.Web.Data.Entities.Event", "Event")
                         .WithMany("Media")
@@ -627,7 +627,7 @@ namespace PartyPix.Web.Data.Migrations
                     b.HasOne("PartyPix.Web.Data.Entities.GuestSession", "GuestSession")
                         .WithMany()
                         .HasForeignKey("GuestSessionId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.ClientSetNull);
 
                     b.Navigation("Album");
 
@@ -641,7 +641,7 @@ namespace PartyPix.Web.Data.Migrations
                     b.HasOne("PartyPix.Web.Data.Entities.GuestSession", "GuestSession")
                         .WithMany()
                         .HasForeignKey("GuestSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired();
 
                     b.HasOne("PartyPix.Web.Data.Entities.Media", "Media")

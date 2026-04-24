@@ -50,12 +50,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             m.Property(x => x.DisplayKey).HasMaxLength(400);
             m.Property(x => x.PosterKey).HasMaxLength(400);
 
+            // Event is the single cascade root for Media. Album/GuestSession
+            // use ClientSetNull (DB NoAction) to avoid SQL Server "multiple
+            // cascade paths" errors — Event → Albums/GuestSessions already
+            // cascades to Media directly via FK_Media_Events_EventId.
             m.HasOne(x => x.Event).WithMany(e => e.Media)
              .HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade);
             m.HasOne(x => x.Album).WithMany(a => a!.Media)
-             .HasForeignKey(x => x.AlbumId).OnDelete(DeleteBehavior.SetNull);
+             .HasForeignKey(x => x.AlbumId).OnDelete(DeleteBehavior.ClientSetNull);
             m.HasOne(x => x.GuestSession).WithMany()
-             .HasForeignKey(x => x.GuestSessionId).OnDelete(DeleteBehavior.SetNull);
+             .HasForeignKey(x => x.GuestSessionId).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         b.Entity<GuestSession>(g =>
@@ -81,10 +85,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             r.HasIndex(x => new { x.MediaId, x.GuestSessionId, x.Kind });
             r.Property(x => x.Body).HasMaxLength(2000);
+            // Media cascade is the single DB path. GuestSession uses
+            // ClientCascade (DB NoAction) to avoid "multiple cascade paths":
+            // Event → Media → Reactions and Event → GuestSessions → Reactions
+            // both terminate here, so only one can be a DB cascade.
             r.HasOne(x => x.Media).WithMany()
              .HasForeignKey(x => x.MediaId).OnDelete(DeleteBehavior.Cascade);
             r.HasOne(x => x.GuestSession).WithMany()
-             .HasForeignKey(x => x.GuestSessionId).OnDelete(DeleteBehavior.Cascade);
+             .HasForeignKey(x => x.GuestSessionId).OnDelete(DeleteBehavior.ClientCascade);
         });
     }
 }

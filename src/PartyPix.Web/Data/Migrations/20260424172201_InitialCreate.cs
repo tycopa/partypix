@@ -292,8 +292,7 @@ namespace PartyPix.Web.Data.Migrations
                         name: "FK_Media_Albums_AlbumId",
                         column: x => x.AlbumId,
                         principalTable: "Albums",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Media_Events_EventId",
                         column: x => x.EventId,
@@ -304,8 +303,7 @@ namespace PartyPix.Web.Data.Migrations
                         name: "FK_Media_GuestSessions_GuestSessionId",
                         column: x => x.GuestSessionId,
                         principalTable: "GuestSessions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -326,8 +324,7 @@ namespace PartyPix.Web.Data.Migrations
                         name: "FK_Reactions_GuestSessions_GuestSessionId",
                         column: x => x.GuestSessionId,
                         principalTable: "GuestSessions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Reactions_Media_MediaId",
                         column: x => x.MediaId,
