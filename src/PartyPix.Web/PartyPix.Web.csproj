@@ -31,6 +31,18 @@
     <Content Update="wwwroot\**\*">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <!-- Development-only settings must not reach the production publish output. -->
+    <Content Update="appsettings.Development.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <!-- appsettings.Production.json is maintained manually on the server and is
+         never committed to the repo.  Marking it Never here documents the intent
+         and prevents an accidental copy if the file is ever added to the tree.
+         The deploy workflow also excludes it from the robocopy mirror so a
+         previously deployed copy on the server is never deleted. -->
+    <Content Update="appsettings.Production.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

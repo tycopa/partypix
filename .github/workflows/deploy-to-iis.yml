@@ -109,7 +109,12 @@ jobs:
           # App_Data (Serilog rolling logs) is excluded so runtime data is
           # never deleted. Media lives at C:\daubery\partypix.files and SQL
           # state lives in SQL Server, so neither is on this deploy path.
-          robocopy $src $dest /MIR /NP /NFL /NDL /XD App_Data logs /XF *.log
+          #
+          # appsettings.Production.json is excluded so the manually-maintained
+          # production configuration (connection strings, storage paths, etc.)
+          # is never overwritten or deleted by a deployment.  Create or edit
+          # this file directly on the server; see README § Configure.
+          robocopy $src $dest /MIR /NP /NFL /NDL /XD App_Data logs /XF *.log appsettings.Production.json
           # Robocopy exit codes 0-7 are success (8+ indicate copy errors).
           # Capture immediately; do NOT reference $LASTEXITCODE after this line,
           # because PowerShell propagates the last native exit code as the step

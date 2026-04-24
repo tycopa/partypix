@@ -81,6 +81,10 @@ an IIS server automatically on every push to `main` (or manually via
    configured deploy path with `robocopy`, then restarts the pool — causing
    brief downtime during the file sync and application restart.
 
+`appsettings.Production.json` is excluded from the robocopy mirror
+(`/XF appsettings.Production.json`) so the server's production configuration
+is **never overwritten or deleted** by a deployment.
+
 ### Runner setup
 
 1. On the IIS host, follow the GitHub docs to
@@ -152,9 +156,13 @@ Copy the output to the VM (or build on the VM). The publish output includes
 the shipped `web.config` — `<IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>`
 in the csproj prevents publish from overwriting it.
 
+`appsettings.Development.json` is excluded from the publish output by the
+csproj (`<CopyToPublishDirectory>Never</CopyToPublishDirectory>`) so
+development-only settings never reach the server.
+
 ### 3. Configure
 
-Edit `C:\apps\partypix\appsettings.Production.json`:
+Create (or edit) `C:\apps\partypix\appsettings.Production.json`:
 
 ```json
 {
@@ -166,6 +174,15 @@ Edit `C:\apps\partypix\appsettings.Production.json`:
   "PublicBaseUrl": "https://partypix.example.com"
 }
 ```
+
+> **Important — this file is not tracked in git and is never overwritten by a
+> deployment.** Both the csproj (`CopyToPublishDirectory=Never`) and the
+> robocopy step in the GitHub Actions workflow (`/XF appsettings.Production.json`)
+> explicitly exclude it, so your production configuration survives every
+> subsequent deploy.
+>
+> To change a production setting: edit the file directly on the server and
+> restart the IIS Application Pool (or `iisreset`). No re-deploy is required.
 
 If SQL Server is running under a different identity than the IIS app
 pool (the default), grant `IIS AppPool\PartyPix` a SQL login and
