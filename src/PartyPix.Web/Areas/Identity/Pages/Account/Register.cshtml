@@ -1,0 +1,46 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Create an account";
+}
+
+<section class="mx-auto max-w-md px-4 py-16">
+    <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Create an account</h1>
+    <p class="mt-1 text-sm text-slate-600">Host your first event in minutes.</p>
+
+    <form method="post" class="mt-8 space-y-4">
+        <div asp-validation-summary="All" class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 empty:hidden"></div>
+
+        <div>
+            <label asp-for="Input.Email" class="block text-sm font-medium text-slate-700">Email</label>
+            <input asp-for="Input.Email" autocomplete="email"
+                   class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <span asp-validation-for="Input.Email" class="mt-1 block text-xs text-red-600"></span>
+        </div>
+
+        <div>
+            <label asp-for="Input.Password" class="block text-sm font-medium text-slate-700">Password</label>
+            <input asp-for="Input.Password" autocomplete="new-password" type="password"
+                   class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <p class="mt-1 text-xs text-slate-500">At least 10 characters.</p>
+            <span asp-validation-for="Input.Password" class="mt-1 block text-xs text-red-600"></span>
+        </div>
+
+        <div>
+            <label asp-for="Input.ConfirmPassword" class="block text-sm font-medium text-slate-700">Confirm password</label>
+            <input asp-for="Input.ConfirmPassword" autocomplete="new-password" type="password"
+                   class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <span asp-validation-for="Input.ConfirmPassword" class="mt-1 block text-xs text-red-600"></span>
+        </div>
+
+        <button type="submit"
+                class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+            Create account
+        </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-slate-600">
+        Already have an account?
+        <a asp-page="./Login" class="font-medium text-indigo-600 hover:underline">Sign in</a>
+    </p>
+</section>
