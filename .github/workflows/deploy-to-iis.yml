@@ -31,20 +31,17 @@ name: Deploy to IIS
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
-    name: Build and deploy to IIS
-    runs-on: [self-hosted, windows, iis]   # Windows self-hosted runner on the IIS host
+    runs-on: self-hosted
+    environment: production
 
     # Least-privilege token: the job only needs to read repository contents.
     permissions:
       contents: read
-
-    environment: production
 
     steps:
       # ── 1. Source ────────────────────────────────────────────────────────────
