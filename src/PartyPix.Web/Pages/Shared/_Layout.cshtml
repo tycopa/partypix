@@ -1,0 +1,44 @@
+@inject SignInManager<AppUser> SignInManager
+@inject UserManager<AppUser> UserManager
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>@(ViewData["Title"] ?? "PartyPix")</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
+    <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+    <header class="border-b border-slate-200 bg-white">
+        <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+            <a href="/" class="text-lg font-semibold tracking-tight">PartyPix</a>
+            <nav class="flex items-center gap-4 text-sm">
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    <a href="/Admin" class="hover:underline">Dashboard</a>
+                    <form method="post" asp-page="/Account/Logout" asp-area="Identity" class="inline">
+                        <button type="submit" class="text-slate-600 hover:text-slate-900">Sign out</button>
+                    </form>
+                }
+                else
+                {
+                    <a href="/Identity/Account/Login" class="hover:underline">Sign in</a>
+                    <a href="/Identity/Account/Register" class="rounded-md bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-500">Get started</a>
+                }
+            </nav>
+        </div>
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+    <footer class="mt-12 border-t border-slate-200 bg-white">
+        <div class="mx-auto max-w-5xl px-4 py-6 text-xs text-slate-500">
+            &copy; @DateTime.UtcNow.Year PartyPix
+        </div>
+    </footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

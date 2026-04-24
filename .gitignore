@@ -1,0 +1,42 @@
+# Build output
+bin/
+obj/
+out/
+publish/
+
+# User/IDE files
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+*.swp
+*.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Local config / secrets
+appsettings.Local.json
+appsettings.Production.json
+*.pfx
+.env
+.env.*
+
+# Runtime data
+App_Data/
+uploads/
+media-store/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# Node / Tailwind
+node_modules/
+wwwroot/css/site.css
+
+# Coverage
+TestResults/
+coverage/

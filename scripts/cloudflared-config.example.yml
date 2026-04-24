@@ -1,0 +1,26 @@
+# Example cloudflared config.
+# Install: cloudflared.exe service install <TOKEN_FROM_ZT_DASHBOARD>
+# Or use this file if running via `cloudflared tunnel run <name>`.
+#
+# Location on Windows: C:\Windows\System32\config\systemprofile\.cloudflared\config.yml
+
+tunnel: <TUNNEL_UUID>
+credentials-file: C:\Windows\System32\config\systemprofile\.cloudflared\<TUNNEL_UUID>.json
+
+# Quality-of-life: keep WebSocket connections alive for SignalR
+originRequest:
+  connectTimeout: 30s
+  tlsTimeout: 10s
+  tcpKeepAlive: 30s
+  keepAliveConnections: 100
+  keepAliveTimeout: 90s
+  noTLSVerify: true
+
+ingress:
+  - hostname: partypix.example.com
+    service: http://127.0.0.1:5000
+    originRequest:
+      # SignalR WebSocket upgrade
+      httpHostHeader: partypix.example.com
+      disableChunkedEncoding: false
+  - service: http_status:404

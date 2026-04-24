@@ -1,0 +1,84 @@
+@page "/e/{slug}/upload"
+@model PartyPix.Web.Pages.E.UploadModel
+@{
+    Layout = "_GuestLayout";
+    ViewData["Title"] = "Add photos — " + Model.Event.Title;
+}
+
+<section class="py-6" x-data="uploader()" x-init="init()">
+    <a asp-page="/E/Gallery" asp-route-slug="@Model.Event.Slug" class="text-sm text-slate-400 hover:underline">&larr; Gallery</a>
+
+    <h1 class="mt-2 text-2xl font-semibold">Add photos & videos</h1>
+    <p class="text-sm text-slate-400">Uploading as <strong>@Model.Guest.DisplayName</strong></p>
+
+    <label class="mt-8 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/50 p-6 text-center hover:bg-slate-900">
+        <span class="text-base font-medium">Tap to choose from your camera roll</span>
+        <span class="mt-1 text-xs text-slate-400">Photos or videos. You can select multiple.</span>
+        <input type="file" accept="image/*,video/*" multiple class="sr-only"
+               @@change="onFiles($event.target.files)" />
+    </label>
+
+    <ul class="mt-6 space-y-2">
+        <template x-for="f in files" :key="f.id">
+            <li class="rounded-md bg-slate-900 p-3 ring-1 ring-slate-800">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="truncate text-sm" x-text="f.name"></span>
+                    <span class="text-xs text-slate-400" x-text="f.status"></span>
+                </div>
+                <div class="mt-2 h-1.5 overflow-hidden rounded bg-slate-800">
+                    <div class="h-full bg-indigo-500 transition-all" :style="'width:' + f.pct + '%'"></div>
+                </div>
+            </li>
+        </template>
+    </ul>
+</section>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.1.0/dist/tus.min.js"></script>
+<script>
+function uploader() {
+    return {
+        slug: "@Model.Event.Slug",
+        files: [],
+        nextId: 1,
+        init() { /* no-op; present for x-init hook */ },
+        onFiles(fileList) {
+            for (const file of fileList) this.upload(file);
+        },
+        upload(file) {
+            const entry = {
+                id: this.nextId++,
+                name: file.name,
+                pct: 0,
+                status: "queued",
+            };
+            this.files.unshift(entry);
+            const self = this;
+            const upload = new tus.Upload(file, {
+                endpoint: "/api/uploads",
+                retryDelays: [0, 1000, 3000, 5000, 10000],
+                chunkSize: 5 * 1024 * 1024,
+                metadata: {
+                    filename: file.name,
+                    filetype: file.type || "application/octet-stream",
+                    eventSlug: self.slug,
+                },
+                onError(err) {
+                    entry.status = "failed";
+                    console.error(err);
+                },
+                onProgress(sent, total) {
+                    entry.pct = Math.round((sent / total) * 100);
+                    entry.status = "uploading";
+                },
+                onSuccess() {
+                    entry.pct = 100;
+                    entry.status = "done";
+                },
+            });
+            upload.start();
+        },
+    };
+}
+</script>
+}

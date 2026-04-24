@@ -1,0 +1,67 @@
+@page "/e/{slug}/slideshow"
+@model PartyPix.Web.Pages.E.SlideshowModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.Event.Title — Slideshow</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        html, body { height: 100%; margin: 0; background: #000; color: #fff; font-family: system-ui; }
+        .stage { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; }
+        .stage img { max-width: 100%; max-height: 100%; object-fit: contain; transition: opacity 600ms ease; }
+        .overlay { position: fixed; left: 0; right: 0; bottom: 0; padding: 1rem 2rem; background: linear-gradient(to top, rgba(0,0,0,.7), transparent); }
+        .muted { color: #a0aec0; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="stage">
+        <img id="slide" src="" alt="" />
+    </div>
+    <div class="overlay">
+        <div style="font-weight:600;font-size:1.25rem">@Model.Event.Title</div>
+        <div class="muted" id="caption"></div>
+    </div>
+
+    <script src="https://unpkg.com/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script>
+    (function () {
+        const slug = "@Model.Event.Slug";
+        const slide = document.getElementById("slide");
+        const caption = document.getElementById("caption");
+        let queue = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.InitialMediaIds));
+        let index = 0;
+        let intervalMs = 5000;
+
+        function show(id) {
+            slide.style.opacity = 0;
+            const img = new Image();
+            img.onload = () => { slide.src = img.src; slide.style.opacity = 1; };
+            img.src = "/media/" + id + "/display";
+            caption.textContent = "";
+        }
+
+        function tick() {
+            if (queue.length === 0) return;
+            index = (index + 1) % queue.length;
+            show(queue[index]);
+        }
+
+        if (queue.length > 0) show(queue[0]);
+        setInterval(tick, intervalMs);
+
+        const conn = new signalR.HubConnectionBuilder().withUrl("/hubs/slideshow").withAutomaticReconnect().build();
+        conn.on("mediaAdded", (payload) => {
+            queue.push(payload.mediaId);
+            // jump to newest arrival after a beat so guests see their own photo
+            setTimeout(() => { index = queue.length - 1; show(queue[index]); }, 800);
+        });
+        conn.start().then(() => conn.invoke("JoinEvent", slug)).catch(console.error);
+    })();
+    </script>
+</body>
+</html>
