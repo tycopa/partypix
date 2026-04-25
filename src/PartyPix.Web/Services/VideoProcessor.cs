@@ -6,12 +6,28 @@ public record ProcessedVideo(double? DurationSeconds);
 
 /// <summary>
 /// Pulls a poster frame and the playback duration out of an uploaded video
-/// using the system ffmpeg/ffprobe binaries. Videos are served raw from
-/// MediaController; this exists only to give them a thumbnail in the grid
-/// and a poster for the &lt;video&gt; element.
+/// using the bundled (or system) ffmpeg/ffprobe binaries. Videos are served
+/// raw from MediaController; this exists only to give them a thumbnail in
+/// the grid and a poster for the &lt;video&gt; element.
 /// </summary>
-public class VideoProcessor(IStorageService storage, ILogger<VideoProcessor> log)
+public class VideoProcessor(
+    IStorageService storage,
+    IWebHostEnvironment env,
+    ILogger<VideoProcessor> log)
 {
+    // Prefer binaries shipped alongside the app under <ContentRoot>/tools so
+    // hosts without a system ffmpeg install still get thumbnails. Falls back
+    // to the bare name so the OS PATH lookup still works elsewhere.
+    private readonly string _ffmpeg = ResolveBin(env, "ffmpeg");
+    private readonly string _ffprobe = ResolveBin(env, "ffprobe");
+
+    private static string ResolveBin(IWebHostEnvironment env, string name)
+    {
+        var exeName = OperatingSystem.IsWindows() ? $"{name}.exe" : name;
+        var bundled = Path.Combine(env.ContentRootPath, "tools", exeName);
+        return File.Exists(bundled) ? bundled : name;
+    }
+
     /// <summary>
     /// Writes a 600x600 JPEG thumbnail (square cropped) and a wider, aspect-
     /// preserved poster JPEG. Either output is best-effort: if ffmpeg is
@@ -63,7 +79,7 @@ public class VideoProcessor(IStorageService storage, ILogger<VideoProcessor> log
     {
         try
         {
-            var psi = new ProcessStartInfo("ffprobe")
+            var psi = new ProcessStartInfo(_ffprobe)
             {
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -99,7 +115,7 @@ public class VideoProcessor(IStorageService storage, ILogger<VideoProcessor> log
     {
         try
         {
-            var psi = new ProcessStartInfo("ffmpeg")
+            var psi = new ProcessStartInfo(_ffmpeg)
             {
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,

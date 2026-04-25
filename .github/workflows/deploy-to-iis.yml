@@ -85,6 +85,43 @@ jobs:
           --output "${{ runner.temp }}\publish"
           --no-restore
 
+      # Bundle a static ffmpeg/ffprobe so the IIS host doesn't need a
+      # separate install. Cached across runs — the download only happens
+      # the first time (or when the cache key bumps).
+      - name: Cache ffmpeg
+        uses: actions/cache@v4
+        with:
+          path: ffmpeg-cache
+          key: ffmpeg-release-essentials-windows-v1
+
+      - name: Download ffmpeg if not cached
+        shell: powershell
+        run: |
+          if (-not (Test-Path "ffmpeg-cache\ffmpeg.exe")) {
+              New-Item -ItemType Directory -Force -Path ffmpeg-cache | Out-Null
+              $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+              $zip = "$env:RUNNER_TEMP\ffmpeg.zip"
+              Write-Host "Downloading $url"
+              Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+              $extractTo = "$env:RUNNER_TEMP\ffmpeg-extract"
+              if (Test-Path $extractTo) { Remove-Item -Recurse -Force $extractTo }
+              Expand-Archive -Path $zip -DestinationPath $extractTo -Force
+              $bin = Get-ChildItem -Path $extractTo -Filter "ffmpeg.exe" -Recurse | Select-Object -First 1
+              if (-not $bin) { throw "ffmpeg.exe not found in archive" }
+              Copy-Item -Path $bin.FullName -Destination "ffmpeg-cache\ffmpeg.exe"
+              Copy-Item -Path (Join-Path $bin.DirectoryName "ffprobe.exe") -Destination "ffmpeg-cache\ffprobe.exe"
+          }
+          Write-Host "ffmpeg ready in ffmpeg-cache"
+
+      - name: Stage ffmpeg into publish output
+        shell: powershell
+        run: |
+          $tools = "${{ runner.temp }}\publish\tools"
+          New-Item -ItemType Directory -Force -Path $tools | Out-Null
+          Copy-Item -Path "ffmpeg-cache\ffmpeg.exe" -Destination $tools -Force
+          Copy-Item -Path "ffmpeg-cache\ffprobe.exe" -Destination $tools -Force
+          Write-Host "ffmpeg staged at $tools"
+
       # ── 4. Deploy to IIS ─────────────────────────────────────────────────────
       - name: Stop IIS Application Pool
         shell: powershell
