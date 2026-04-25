@@ -51,6 +51,7 @@ builder.Services.AddAntiforgery(o => o.HeaderName = "X-CSRF-TOKEN");
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
 builder.Services.AddSingleton<IStorageService, LocalDiskStorage>();
 builder.Services.AddScoped<ImageProcessor>();
+builder.Services.AddScoped<VideoProcessor>();
 builder.Services.AddSingleton<QrService>();
 builder.Services.AddScoped<GuestSessionAccessor>();
 builder.Services.AddScoped<MediaNotifier>();

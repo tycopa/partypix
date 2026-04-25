@@ -8,11 +8,21 @@ window.galleryLightbox = function ({ items, canDelete = false }) {
         index: null,
         canDelete,
         deleting: false,
+        init() {
+            // Stop any playing video when the user navigates away. Also fires
+            // on close (index → null) so audio doesn't keep going.
+            this.$watch("index", () => this.pauseVideo());
+        },
+        pauseVideo() {
+            const v = this.$refs.videoEl;
+            if (v && !v.paused) v.pause();
+        },
         open(i) {
             this.index = i;
             document.body.style.overflow = "hidden";
         },
         close() {
+            this.pauseVideo();
             this.index = null;
             document.body.style.overflow = "";
         },

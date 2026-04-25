@@ -46,11 +46,19 @@
         </svg>
     </button>
 
-    <img x-show="index !== null"
-         :src="index !== null ? ('/media/' + items[index].id + '/display') : ''"
+    <img x-show="index !== null && items[index] && items[index].kind !== 1"
+         :src="index !== null && items[index] && items[index].kind !== 1 ? ('/media/' + items[index].id + '/display') : ''"
          alt=""
          class="max-h-[85vh] max-w-[95vw] object-contain"
          @@click.stop />
+
+    <video x-show="index !== null && items[index] && items[index].kind === 1"
+           x-ref="videoEl"
+           :src="index !== null && items[index] && items[index].kind === 1 ? ('/media/' + items[index].id + '/display') : ''"
+           :poster="index !== null && items[index] && items[index].kind === 1 ? ('/media/' + items[index].id + '/thumb') : ''"
+           controls playsinline
+           class="max-h-[85vh] max-w-[95vw] object-contain bg-black"
+           @@click.stop></video>
 
     <div class="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1 text-white">
         <div x-show="index !== null && items[index] && items[index].uploaderName"

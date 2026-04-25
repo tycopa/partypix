@@ -69,19 +69,44 @@ public class MediaController(
             if (session is null) return Unauthorized();
         }
 
-        var key = variant switch
+        // Pick the right file + content-type for the requested variant. Videos
+        // need the original bytes for Display (so the browser can play them),
+        // but the JPEG poster for Thumb. Images use generated JPEG variants
+        // for both.
+        string key;
+        string contentType;
+        if (variant == Variant.Thumb)
         {
-            Variant.Thumb => m.ThumbnailKey ?? m.DisplayKey ?? m.StorageKey,
-            Variant.Display => m.DisplayKey ?? m.StorageKey,
-            _ => m.StorageKey,
-        };
+            key = m.ThumbnailKey ?? "";
+            contentType = "image/jpeg";
+        }
+        else if (variant == Variant.Display)
+        {
+            if (m.Kind == MediaKind.Video)
+            {
+                key = m.StorageKey;
+                contentType = m.ContentType;
+            }
+            else
+            {
+                key = m.DisplayKey ?? m.StorageKey;
+                contentType = "image/jpeg";
+            }
+        }
+        else
+        {
+            key = m.StorageKey;
+            contentType = m.ContentType;
+        }
+
         if (string.IsNullOrEmpty(key) || !storage.Exists(key)) return NotFound();
 
         var stream = storage.OpenRead(key);
-        var contentType = variant == Variant.Original ? m.ContentType : "image/jpeg";
 
-        // Cache thumbs/displays aggressively; Cloudflare will cache them at the edge.
-        if (variant != Variant.Original)
+        // Cache JPEG thumbs/displays aggressively; Cloudflare can cache them
+        // at the edge. Don't cache video bytes — they're delivered with range
+        // requests and browsers already handle their own caching.
+        if (variant == Variant.Thumb || (variant == Variant.Display && m.Kind != MediaKind.Video))
             Response.Headers.CacheControl = "public, max-age=31536000, immutable";
 
         return File(stream, contentType, enableRangeProcessing: true);

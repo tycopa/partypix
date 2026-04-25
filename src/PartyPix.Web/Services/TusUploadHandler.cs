@@ -16,6 +16,7 @@ public class TusUploadHandler(
     AppDbContext db,
     IStorageService storage,
     ImageProcessor images,
+    VideoProcessor videos,
     MediaNotifier notifier,
     GuestSessionAccessor guests,
     ILogger<TusUploadHandler> log)
@@ -66,6 +67,7 @@ public class TusUploadHandler(
         var origKey = $"events/{ev.Slug}/orig/{mediaId}{ext}";
         var displayKey = $"events/{ev.Slug}/display/{mediaId}.jpg";
         var thumbKey = $"events/{ev.Slug}/thumb/{mediaId}.jpg";
+        var posterKey = $"events/{ev.Slug}/poster/{mediaId}.jpg";
 
         // Persist original
         await using (var src = await file.GetContentAsync(ctx.CancellationToken))
@@ -102,7 +104,12 @@ public class TusUploadHandler(
             }
             else
             {
-                // Video pipeline is out of scope for v0.1 — mark ready; no thumb yet.
+                var info = await videos.ProcessAsync(origKey, thumbKey, posterKey, ctx.CancellationToken);
+                // ProcessAsync swallows ffmpeg failures, so check the files
+                // actually exist before claiming we have a thumbnail.
+                if (storage.Exists(thumbKey)) media.ThumbnailKey = thumbKey;
+                if (storage.Exists(posterKey)) media.PosterKey = posterKey;
+                media.DurationSeconds = info.DurationSeconds;
                 media.Status = MediaStatus.Ready;
             }
 
