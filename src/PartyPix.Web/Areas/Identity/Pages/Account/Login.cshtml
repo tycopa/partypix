@@ -27,10 +27,13 @@
             <span asp-validation-for="Input.Password" class="mt-1 block text-xs text-red-700"></span>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-ink">
-            <input asp-for="Input.RememberMe" type="checkbox" class="rounded border-bronze/40 text-bronze focus:ring-bronze" />
-            Remember me
-        </label>
+        <div class="flex items-center justify-between text-sm">
+            <label class="flex items-center gap-2 text-ink">
+                <input asp-for="Input.RememberMe" type="checkbox" class="rounded border-bronze/40 text-bronze focus:ring-bronze" />
+                Remember me
+            </label>
+            <a asp-page="./ForgotPassword" class="text-bronze hover:underline">Forgot password?</a>
+        </div>
 
         <button type="submit"
                 class="w-full rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">

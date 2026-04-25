@@ -21,8 +21,9 @@
                     <a href="/Admin" class="text-ink hover:text-bronze hover:underline">Dashboard</a>
                     @if (User.IsInRole("Admin"))
                     {
-                        <a href="/Identity/Account/Register" class="text-ink hover:text-bronze hover:underline">Add user</a>
+                        <a href="/Admin/Users" class="text-ink hover:text-bronze hover:underline">Users</a>
                     }
+                    <a href="/Identity/Account/ChangePassword" class="text-ink hover:text-bronze hover:underline">Change password</a>
                     <form method="post" asp-page="/Account/Logout" asp-area="Identity" class="inline">
                         <button type="submit" class="text-ink-soft hover:text-bronze">Sign out</button>
                     </form>
