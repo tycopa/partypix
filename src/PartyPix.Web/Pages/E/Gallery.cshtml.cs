@@ -9,7 +9,9 @@ namespace PartyPix.Web.Pages.E;
 
 public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageModel
 {
-    public const int PageSize = 50;
+    // 48 = 2 × 3 × 4 × 6, so every responsive grid breakpoint (2/3/4 cols)
+    // fills complete rows.
+    public const int PageSize = 48;
 
     public Event Event { get; private set; } = default!;
     public GuestSession Guest { get; private set; } = default!;
