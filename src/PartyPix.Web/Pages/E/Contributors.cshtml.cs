@@ -31,25 +31,44 @@ public class ContributorsModel(AppDbContext db, GuestSessionAccessor guests) : P
         Event = ev;
         Guest = guest;
 
-        Contributors = await db.GuestSessions
-            .Where(g => g.EventId == ev.Id)
-            .Select(g => new Contributor(
-                g.Id,
-                g.DisplayName,
-                db.Media.Count(m => m.GuestSessionId == g.Id
-                                    && m.EventId == ev.Id
-                                    && m.Status == MediaStatus.Ready),
-                db.Media
-                    .Where(m => m.GuestSessionId == g.Id
-                                && m.EventId == ev.Id
-                                && m.Status == MediaStatus.Ready)
-                    .OrderByDescending(m => m.CreatedAt)
-                    .Select(m => (Guid?)m.Id)
-                    .FirstOrDefault()))
-            .Where(c => c.Count > 0)
+        // Step 1: aggregate Ready media by guest session in a single SQL
+        // query. Group-by + Count + most-recent-id translates cleanly without
+        // post-projection Where filters that EF sometimes refuses.
+        var aggregates = await db.Media
+            .Where(m => m.EventId == ev.Id
+                        && m.Status == MediaStatus.Ready
+                        && m.GuestSessionId != null)
+            .GroupBy(m => m.GuestSessionId!.Value)
+            .Select(g => new
+            {
+                GuestId = g.Key,
+                Count = g.Count(),
+                SampleId = g.OrderByDescending(m => m.CreatedAt)
+                            .Select(m => (Guid?)m.Id)
+                            .FirstOrDefault(),
+            })
+            .ToListAsync(ct);
+
+        if (aggregates.Count == 0) return Page();
+
+        // Step 2: pull the display names for those sessions in one round trip
+        // and merge in memory. The list is bounded by the number of guests
+        // who actually uploaded, so this stays small.
+        var ids = aggregates.Select(a => a.GuestId).ToList();
+        var names = await db.GuestSessions
+            .Where(s => ids.Contains(s.Id))
+            .Select(s => new { s.Id, s.DisplayName })
+            .ToDictionaryAsync(s => s.Id, s => s.DisplayName, ct);
+
+        Contributors = aggregates
+            .Select(a => new Contributor(
+                a.GuestId,
+                names.TryGetValue(a.GuestId, out var n) ? n : "(unknown)",
+                a.Count,
+                a.SampleId))
             .OrderByDescending(c => c.Count)
             .ThenBy(c => c.DisplayName)
-            .ToListAsync(ct);
+            .ToList();
 
         TotalCount = Contributors.Sum(c => c.Count);
         return Page();
