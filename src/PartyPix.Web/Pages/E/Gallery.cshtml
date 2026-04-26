@@ -15,7 +15,7 @@
         <div>
             <h1 class="text-2xl font-semibold tracking-tight text-bronze">@Model.Event.Title</h1>
             <p class="text-sm text-ink-soft">
-                Hi, <span class="text-ink">@Model.Guest.DisplayName</span> · <span x-text="items.length"></span> items
+                Hi, <span class="text-ink">@Model.Guest.DisplayName</span> · @Model.TotalCount items
             </p>
         </div>
         @if (Model.Event.GuestUploadsEnabled)
@@ -57,6 +57,37 @@
     </div>
 
     <partial name="_GalleryLightbox" />
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-8 flex items-center justify-center gap-3 text-sm">
+            @if (Model.CurrentPage > 1)
+            {
+                <a asp-route-slug="@Model.Event.Slug" asp-route-page="@(Model.CurrentPage - 1)"
+                   class="rounded-md border border-bronze/30 bg-white px-3 py-1.5 text-ink hover:bg-parchment">
+                    &larr; Previous
+                </a>
+            }
+            else
+            {
+                <span class="rounded-md border border-bronze/15 px-3 py-1.5 text-ink-soft/60">&larr; Previous</span>
+            }
+
+            <span class="text-ink-soft">Page @Model.CurrentPage of @Model.TotalPages</span>
+
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <a asp-route-slug="@Model.Event.Slug" asp-route-page="@(Model.CurrentPage + 1)"
+                   class="rounded-md border border-bronze/30 bg-white px-3 py-1.5 text-ink hover:bg-parchment">
+                    Next &rarr;
+                </a>
+            }
+            else
+            {
+                <span class="rounded-md border border-bronze/15 px-3 py-1.5 text-ink-soft/60">Next &rarr;</span>
+            }
+        </nav>
+    }
 </section>
 
 @section Scripts {
@@ -65,11 +96,16 @@
 <script>
 (function () {
     const slug = "@Model.Event.Slug";
+    const currentPage = @Model.CurrentPage;
     const conn = new signalR.HubConnectionBuilder()
         .withUrl("/hubs/slideshow")
         .withAutomaticReconnect()
         .build();
     conn.on("mediaAdded", (payload) => {
+        // Only the first page reflects live uploads; on later pages a
+        // prepend would shove a "newest" item into the middle of a window
+        // that's supposed to show older items.
+        if (currentPage !== 1) return;
         window.dispatchEvent(new CustomEvent("media-added", {
             detail: {
                 id: payload.mediaId,
