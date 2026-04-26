@@ -23,7 +23,7 @@ public class DetailModel(
     public List<RecentItem> RecentMedia { get; private set; } = new();
     public string ShareUrl { get; private set; } = "";
 
-    public record RecentItem(Guid Id, int Kind, string? UploaderName);
+    public record RecentItem(Guid Id, int Kind, string? UploaderName, Guid? UploaderId);
 
     public async Task<IActionResult> OnGetAsync(string slug, CancellationToken ct)
     {
@@ -168,7 +168,8 @@ public class DetailModel(
             .Select(m => new RecentItem(
                 m.Id,
                 (int)m.Kind,
-                m.GuestSession != null ? m.GuestSession.DisplayName : null))
+                m.GuestSession != null ? m.GuestSession.DisplayName : null,
+                m.GuestSessionId))
             .ToListAsync(ct);
 
         var baseUrl = config["PublicBaseUrl"]?.TrimEnd('/') ?? $"{Request.Scheme}://{Request.Host}";

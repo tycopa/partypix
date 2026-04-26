@@ -61,7 +61,13 @@
            @@click.stop></video>
 
     <div class="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1 text-white">
-        <div x-show="index !== null && items[index] && items[index].uploaderName"
+        <a x-show="index !== null && items[index] && items[index].uploaderName && eventSlug && items[index].uploaderId"
+           :href="index !== null && items[index] && items[index].uploaderId ? ('/e/' + eventSlug + '/gallery?by=' + items[index].uploaderId) : '#'"
+           class="pointer-events-auto rounded-full bg-white/10 px-3 py-1 text-sm hover:bg-white/20"
+           title="Show only this guest's uploads">
+            Uploaded by <span class="font-medium" x-text="index !== null && items[index] ? (items[index].uploaderName ?? '') : ''"></span>
+        </a>
+        <div x-show="index !== null && items[index] && items[index].uploaderName && (!eventSlug || !items[index].uploaderId)"
              class="rounded-full bg-white/10 px-3 py-1 text-sm">
             Uploaded by <span class="font-medium" x-text="index !== null && items[index] ? (items[index].uploaderName ?? '') : ''"></span>
         </div>

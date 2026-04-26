@@ -4,7 +4,12 @@
 @{
     ViewData["Title"] = Model.Event.Title;
     var recentItems = JsonSerializer.Serialize(
-        Model.RecentMedia.Select(i => new { id = i.Id, kind = i.Kind, uploaderName = i.UploaderName }));
+        Model.RecentMedia.Select(i => new {
+            id = i.Id,
+            kind = i.Kind,
+            uploaderName = i.UploaderName,
+            uploaderId = i.UploaderId,
+        }));
     var deleteError = TempData["DeleteError"] as string;
     var regenStatus = TempData["RegenStatus"] as string;
 }

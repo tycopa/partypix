@@ -17,9 +17,10 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
     public GuestSession Guest { get; private set; } = default!;
 
     /// <summary>
-    /// Every Ready media id for this event (just id + kind + uploader name).
+    /// Every Ready media id for this event (just id + kind + uploader).
     /// Sent to the client so the lightbox can navigate through items that are
-    /// not on the current page without an extra fetch.
+    /// not on the current page without an extra fetch. When a `by` filter is
+    /// active this only contains items uploaded by that guest.
     /// </summary>
     public List<GalleryItem> AllItems { get; private set; } = new();
 
@@ -28,9 +29,12 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
     public int TotalCount { get; private set; }
     public int PageOffset => (CurrentPage - 1) * PageSize;
 
-    public record GalleryItem(Guid Id, int Kind, string? UploaderName);
+    public Guid? FilteredByUploaderId { get; private set; }
+    public string? FilteredByUploaderName { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(string slug, int? p, CancellationToken ct)
+    public record GalleryItem(Guid Id, int Kind, string? UploaderName, Guid? UploaderId);
+
+    public async Task<IActionResult> OnGetAsync(string slug, int? p, Guid? by, CancellationToken ct)
     {
         var ev = await db.Events.FirstOrDefaultAsync(e => e.Slug == slug, ct);
         if (ev is null) return NotFound();
@@ -41,13 +45,24 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
         Event = ev;
         Guest = guest;
 
-        AllItems = await db.Media
-            .Where(m => m.EventId == ev.Id && m.Status == MediaStatus.Ready)
+        var ready = db.Media.Where(m => m.EventId == ev.Id && m.Status == MediaStatus.Ready);
+        if (by.HasValue)
+        {
+            ready = ready.Where(m => m.GuestSessionId == by.Value);
+            FilteredByUploaderId = by.Value;
+            FilteredByUploaderName = await db.GuestSessions
+                .Where(g => g.Id == by.Value && g.EventId == ev.Id)
+                .Select(g => g.DisplayName)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        AllItems = await ready
             .OrderByDescending(m => m.CreatedAt)
             .Select(m => new GalleryItem(
                 m.Id,
                 (int)m.Kind,
-                m.GuestSession != null ? m.GuestSession.DisplayName : null))
+                m.GuestSession != null ? m.GuestSession.DisplayName : null,
+                m.GuestSessionId))
             .ToListAsync(ct);
 
         TotalCount = AllItems.Count;

@@ -2,7 +2,7 @@
 // Used by both the guest gallery and the admin event-detail "Recent uploads"
 // grid. Each page renders its own thumbnail grid but shares the overlay
 // markup in _GalleryLightbox.cshtml and this component definition.
-window.galleryLightbox = function ({ items, canDelete = false, pageOffset = 0, pageSize = 0 }) {
+window.galleryLightbox = function ({ items, canDelete = false, pageOffset = 0, pageSize = 0, eventSlug = "" }) {
     return {
         items,
         index: null,
@@ -15,6 +15,10 @@ window.galleryLightbox = function ({ items, canDelete = false, pageOffset = 0, p
         // it loaded.
         pageOffset,
         pageSize,
+        // Set by the public guest gallery so the "Uploaded by X" pill becomes
+        // a link to /e/{slug}/gallery?by=<id>. Admin contexts leave this
+        // empty and the pill stays plain text.
+        eventSlug,
         get pageItems() {
             if (!this.pageSize) return this.items;
             return this.items.slice(this.pageOffset, this.pageOffset + this.pageSize);
