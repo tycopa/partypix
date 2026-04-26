@@ -13,7 +13,7 @@
 
     <label class="mt-8 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-bronze/40 bg-white/50 p-6 text-center text-ink hover:bg-white/80">
         <span class="text-base font-medium">Tap to choose from your camera roll</span>
-        <span class="mt-1 text-xs text-ink-soft">Photos or videos. You can select multiple. Max @(Model.MaxFileBytes / (1024 * 1024)) MB per file.</span>
+        <span class="mt-1 text-xs text-ink-soft">Photos or videos. You can select multiple. Max @(Model.MaxFileBytes / (1024 * 1024)) MB total per selection.</span>
         <input type="file" accept="image/*,video/*" multiple class="sr-only"
                @@change="onFiles($event.target.files); $event.target.value = ''" />
     </label>
@@ -47,18 +47,19 @@ function uploader() {
             return (bytes / (1024 * 1024)).toFixed(0);
         },
         onFiles(fileList) {
-            for (const file of fileList) {
-                if (file.size > this.maxFileBytes) {
-                    this.files.unshift({
-                        id: this.nextId++,
-                        name: file.name,
-                        pct: 0,
-                        status: "too large (" + this.formatMb(file.size) + " MB; max " + this.formatMb(this.maxFileBytes) + " MB)",
-                    });
-                    continue;
-                }
-                this.upload(file);
+            const picked = Array.from(fileList);
+            if (picked.length === 0) return;
+            const total = picked.reduce((sum, f) => sum + f.size, 0);
+            if (total > this.maxFileBytes) {
+                this.files.unshift({
+                    id: this.nextId++,
+                    name: picked.length === 1 ? picked[0].name : (picked.length + " files"),
+                    pct: 0,
+                    status: "selection too large (" + this.formatMb(total) + " MB; max " + this.formatMb(this.maxFileBytes) + " MB) — pick fewer or smaller items",
+                });
+                return;
             }
+            for (const file of picked) this.upload(file);
         },
         upload(file) {
             const id = this.nextId++;
