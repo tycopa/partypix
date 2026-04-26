@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using PartyPix.Web.Data;
 using PartyPix.Web.Data.Entities;
@@ -26,6 +27,14 @@ public class TusUploadHandler(
     public const string MetaContentType = "filetype";
     public const string MetaEventSlug = "eventSlug";
     public const string MetaAlbumId = "albumId";
+
+    /// <summary>
+    /// Header set on the final tus PATCH response when the upload was a
+    /// duplicate of an existing media row (same event, same SHA-256 of the
+    /// bytes). The Upload page reads this in tus-js-client's onAfterResponse
+    /// to flip the queue entry to "already uploaded" instead of "done".
+    /// </summary>
+    public const string DuplicateHeader = "X-Upload-Duplicate";
 
     public async Task OnFileCompletedAsync(FileCompleteContext ctx)
     {
@@ -56,6 +65,31 @@ public class TusUploadHandler(
 
         var session = await guests.GetAsync(ev, ctx.CancellationToken);
 
+        // Hash the bytes before we copy them anywhere; if this content has
+        // already been uploaded to this event we skip the rest of the
+        // pipeline and signal it to the client via a response header.
+        string contentHash;
+        await using (var src = await file.GetContentAsync(ctx.CancellationToken))
+        {
+            using var sha = SHA256.Create();
+            var hashBytes = await sha.ComputeHashAsync(src, ctx.CancellationToken);
+            contentHash = Convert.ToHexString(hashBytes);
+        }
+
+        var existing = await db.Media
+            .Where(m => m.EventId == ev.Id && m.ContentHash == contentHash)
+            .Select(m => (Guid?)m.Id)
+            .FirstOrDefaultAsync(ctx.CancellationToken);
+
+        if (existing is not null)
+        {
+            ctx.HttpContext.Response.Headers[DuplicateHeader] = existing.Value.ToString();
+            // Drop the tus temp file — there's nothing to keep.
+            try { await ((ITusTerminationStore)ctx.Store).DeleteFileAsync(file.Id, ctx.CancellationToken); }
+            catch (Exception ex) { log.LogWarning(ex, "Failed to delete duplicate tus temp {Id}", file.Id); }
+            return;
+        }
+
         var kind = contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase)
             ? MediaKind.Video
             : MediaKind.Image;
@@ -70,7 +104,8 @@ public class TusUploadHandler(
         var displayImageKey = $"events/{ev.Slug}/display/{mediaId}.jpg";
         var displayVideoKey = $"events/{ev.Slug}/display/{mediaId}.mp4";
 
-        // Persist original
+        // Persist original (re-read the tus stream; ComputeHashAsync above
+        // consumed a separate handle).
         await using (var src = await file.GetContentAsync(ctx.CancellationToken))
         {
             await storage.SaveAsync(origKey, src, ctx.CancellationToken);
@@ -87,6 +122,7 @@ public class TusUploadHandler(
             ContentType = contentType,
             SizeBytes = new FileInfo(storage.ResolvePath(origKey)).Length,
             StorageKey = origKey,
+            ContentHash = contentHash,
         };
         db.Media.Add(media);
         await db.SaveChangesAsync(ctx.CancellationToken);

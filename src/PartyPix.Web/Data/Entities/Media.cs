@@ -45,6 +45,14 @@ public class Media
     public int? Height { get; set; }
     public double? DurationSeconds { get; set; }
 
+    /// <summary>
+    /// SHA-256 hex of the original bytes. Set when the upload pipeline
+    /// finishes hashing; used to reject duplicate re-uploads of the same
+    /// file (per event). Nullable because rows that predate this column
+    /// don't have one.
+    /// </summary>
+    public string? ContentHash { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? TakenAt { get; set; }
 }

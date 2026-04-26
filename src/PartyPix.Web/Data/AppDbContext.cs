@@ -43,12 +43,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         b.Entity<Media>(m =>
         {
             m.HasIndex(x => new { x.EventId, x.CreatedAt });
+            m.HasIndex(x => new { x.EventId, x.ContentHash });
             m.Property(x => x.OriginalFileName).HasMaxLength(260).IsRequired();
             m.Property(x => x.ContentType).HasMaxLength(120).IsRequired();
             m.Property(x => x.StorageKey).HasMaxLength(400).IsRequired();
             m.Property(x => x.ThumbnailKey).HasMaxLength(400);
             m.Property(x => x.DisplayKey).HasMaxLength(400);
             m.Property(x => x.PosterKey).HasMaxLength(400);
+            m.Property(x => x.ContentHash).HasMaxLength(64);
 
             // Event is the single cascade root for Media. Album/GuestSession
             // use ClientSetNull (DB NoAction) to avoid SQL Server "multiple
