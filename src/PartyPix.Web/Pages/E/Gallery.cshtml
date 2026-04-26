@@ -5,11 +5,11 @@
     Layout = "_GuestLayout";
     ViewData["Title"] = Model.Event.Title;
     var initialItems = JsonSerializer.Serialize(
-        Model.Items.Select(i => new { id = i.Id, kind = i.Kind, uploaderName = i.UploaderName }));
+        Model.AllItems.Select(i => new { id = i.Id, kind = i.Kind, uploaderName = i.UploaderName }));
 }
 
 <section class="py-6"
-         x-data="galleryLightbox({ items: @initialItems })"
+         x-data="galleryLightbox({ items: @initialItems, pageOffset: @Model.PageOffset, pageSize: @PartyPix.Web.Pages.E.GalleryModel.PageSize })"
          @@media-added.window="addItem($event.detail)">
     <div class="flex items-start justify-between gap-4">
         <div>
@@ -39,8 +39,8 @@
 
     <div x-show="items.length > 0"
          class="mt-6 grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4">
-        <template x-for="(item, i) in items" :key="item.id">
-            <button type="button" @@click="open(i)"
+        <template x-for="(item, i) in pageItems" :key="item.id">
+            <button type="button" @@click="open(pageOffset + i)"
                     :class="item.kind === 1 ? 'bg-ink' : 'bg-white'"
                     class="relative aspect-square overflow-hidden rounded-md ring-1 ring-bronze/15 focus:outline-none focus:ring-2 focus:ring-bronze">
                 <img :src="'/media/' + item.id + '/thumb'" alt=""

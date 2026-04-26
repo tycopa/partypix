@@ -2,12 +2,23 @@
 // Used by both the guest gallery and the admin event-detail "Recent uploads"
 // grid. Each page renders its own thumbnail grid but shares the overlay
 // markup in _GalleryLightbox.cshtml and this component definition.
-window.galleryLightbox = function ({ items, canDelete = false }) {
+window.galleryLightbox = function ({ items, canDelete = false, pageOffset = 0, pageSize = 0 }) {
     return {
         items,
         index: null,
         canDelete,
         deleting: false,
+        // pageOffset/pageSize let the grid render only the current page's
+        // window of items while the lightbox keeps the full set for arrow-key
+        // navigation across pages. pageSize === 0 means "no pagination" — used
+        // by callers like the admin Recent uploads grid that shows everything
+        // it loaded.
+        pageOffset,
+        pageSize,
+        get pageItems() {
+            if (!this.pageSize) return this.items;
+            return this.items.slice(this.pageOffset, this.pageOffset + this.pageSize);
+        },
         init() {
             // Stop any playing video when the user navigates away. Also fires
             // on close (index → null) so audio doesn't keep going.
