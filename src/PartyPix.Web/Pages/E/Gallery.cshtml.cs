@@ -21,7 +21,11 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
 
     public record GalleryItem(Guid Id, int Kind, string? UploaderName);
 
-    public async Task<IActionResult> OnGetAsync(string slug, int? page, CancellationToken ct)
+    // Bind the page-number query param as `p` rather than `page`, since
+    // `page` is reserved by Razor Pages routing for selecting which page to
+    // render — using it as a route value via asp-route-page produces broken
+    // hrefs.
+    public async Task<IActionResult> OnGetAsync(string slug, int? p, CancellationToken ct)
     {
         var ev = await db.Events.FirstOrDefaultAsync(e => e.Slug == slug, ct);
         if (ev is null) return NotFound();
@@ -35,7 +39,7 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
         var ready = db.Media.Where(m => m.EventId == ev.Id && m.Status == MediaStatus.Ready);
         TotalCount = await ready.CountAsync(ct);
         TotalPages = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
-        CurrentPage = Math.Clamp(page ?? 1, 1, TotalPages);
+        CurrentPage = Math.Clamp(p ?? 1, 1, TotalPages);
 
         Items = await ready
             .OrderByDescending(m => m.CreatedAt)
