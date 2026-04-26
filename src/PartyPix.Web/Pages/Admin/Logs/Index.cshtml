@@ -1,0 +1,77 @@
+@page
+@model PartyPix.Web.Pages.Admin.Logs.IndexModel
+@{
+    ViewData["Title"] = "Logs";
+}
+
+<section class="mx-auto max-w-5xl px-4 py-10">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-bronze">Logs</h1>
+            <p class="text-sm text-ink-soft">Most recent ~256 KB of the selected log file.</p>
+        </div>
+        @if (Model.Selected is not null)
+        {
+            <a asp-page-handler="Download" asp-route-file="@Model.Selected"
+               class="rounded-md border border-bronze/30 bg-white px-3 py-1.5 text-sm text-ink hover:bg-parchment">
+                Download full file
+            </a>
+        }
+    </div>
+
+    @if (Model.Files.Count == 0)
+    {
+        <div class="mt-8 rounded-md border border-dashed border-bronze/40 p-8 text-center text-sm text-ink-soft">
+            No log files yet. They land under <code class="rounded bg-parchment px-1 font-mono">App_Data/logs</code>
+            once the app records anything.
+        </div>
+    }
+    else
+    {
+        <form method="get" class="mt-6 flex flex-wrap items-end gap-3 text-sm">
+            <div>
+                <label for="file" class="block text-xs font-medium uppercase tracking-wide text-ink-soft">File</label>
+                <select id="file" name="file" onchange="this.form.submit()"
+                        class="mt-1 rounded-md border border-bronze/30 bg-white px-3 py-1.5 text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze">
+                    @foreach (var f in Model.Files)
+                    {
+                        var label = $"{f.Name}  —  {(f.Bytes / 1024.0):0.#} KB";
+                        if (f.Name == Model.Selected)
+                        {
+                            <option value="@f.Name" selected>@label</option>
+                        }
+                        else
+                        {
+                            <option value="@f.Name">@label</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label for="filter" class="block text-xs font-medium uppercase tracking-wide text-ink-soft">Show</label>
+                <select id="filter" name="filter" onchange="this.form.submit()"
+                        class="mt-1 rounded-md border border-bronze/30 bg-white px-3 py-1.5 text-ink focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze">
+                    <option value="all" selected="@(Model.Filter == "all")">All</option>
+                    <option value="warnings" selected="@(Model.Filter == "warnings")">Warnings + errors</option>
+                    <option value="errors" selected="@(Model.Filter == "errors")">Errors only</option>
+                </select>
+            </div>
+
+            <noscript>
+                <button type="submit" class="rounded-md bg-bronze px-3 py-1.5 text-white hover:bg-bronze-deep">
+                    Apply
+                </button>
+            </noscript>
+        </form>
+
+        @if (Model.Truncated)
+        {
+            <p class="mt-3 text-xs text-ink-soft">
+                Showing the tail of this file. Older entries are in the download.
+            </p>
+        }
+
+        <pre class="mt-4 max-h-[70vh] overflow-auto rounded-md bg-ink p-4 text-xs leading-relaxed text-parchment ring-1 ring-bronze/20"><code>@Model.Tail</code></pre>
+    }
+</section>
