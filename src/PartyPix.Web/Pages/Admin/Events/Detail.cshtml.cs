@@ -14,6 +14,7 @@ public class DetailModel(
     AppDbContext db,
     UserManager<AppUser> users,
     IStorageService storage,
+    VideoProcessor videoProcessor,
     IConfiguration config) : PageModel
 {
     public Event Event { get; private set; } = default!;
@@ -66,6 +67,66 @@ public class DetailModel(
         db.Events.Remove(ev);
         await db.SaveChangesAsync(ct);
         return RedirectToPage("/Admin/Index");
+    }
+
+    /// <summary>
+    /// Re-runs VideoProcessor against every Ready video for this event that
+    /// is missing a thumbnail or playback variant. Used to backfill items
+    /// uploaded before ffmpeg / the H.264 transcode were wired up.
+    /// </summary>
+    public async Task<IActionResult> OnPostRegenerateVideoArtifactsAsync(
+        string slug, CancellationToken ct)
+    {
+        var ev = await LoadAsync(slug, ct);
+        if (ev is null) return NotFound();
+
+        var videos = await db.Media
+            .Where(m => m.EventId == ev.Id
+                        && m.Kind == MediaKind.Video
+                        && m.Status == MediaStatus.Ready
+                        && (m.ThumbnailKey == null
+                            || m.PosterKey == null
+                            || m.DisplayKey == null))
+            .ToListAsync(ct);
+
+        var processed = 0;
+        var failed = 0;
+        foreach (var m in videos)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (string.IsNullOrEmpty(m.StorageKey) || !storage.Exists(m.StorageKey))
+            {
+                failed++;
+                continue;
+            }
+
+            var thumbKey = $"events/{ev.Slug}/thumb/{m.Id}.jpg";
+            var posterKey = $"events/{ev.Slug}/poster/{m.Id}.jpg";
+            var displayKey = $"events/{ev.Slug}/display/{m.Id}.mp4";
+
+            try
+            {
+                var info = await videoProcessor.ProcessAsync(
+                    m.StorageKey, thumbKey, posterKey, displayKey, ct);
+
+                if (storage.Exists(thumbKey)) m.ThumbnailKey = thumbKey;
+                if (storage.Exists(posterKey)) m.PosterKey = posterKey;
+                if (info.TranscodedToMp4 && storage.Exists(displayKey))
+                    m.DisplayKey = displayKey;
+                if (info.DurationSeconds.HasValue) m.DurationSeconds = info.DurationSeconds;
+                processed++;
+            }
+            catch
+            {
+                failed++;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        TempData["RegenStatus"] = videos.Count == 0
+            ? "No videos needed regeneration."
+            : $"Regenerated {processed} video(s)" + (failed > 0 ? $", {failed} failed." : ".");
+        return RedirectToPage(new { slug });
     }
 
     public async Task<IActionResult> OnPostSettingsAsync(

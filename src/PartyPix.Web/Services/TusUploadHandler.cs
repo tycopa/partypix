@@ -65,9 +65,10 @@ public class TusUploadHandler(
         if (string.IsNullOrEmpty(ext)) ext = kind == MediaKind.Video ? ".mp4" : ".jpg";
 
         var origKey = $"events/{ev.Slug}/orig/{mediaId}{ext}";
-        var displayKey = $"events/{ev.Slug}/display/{mediaId}.jpg";
         var thumbKey = $"events/{ev.Slug}/thumb/{mediaId}.jpg";
         var posterKey = $"events/{ev.Slug}/poster/{mediaId}.jpg";
+        var displayImageKey = $"events/{ev.Slug}/display/{mediaId}.jpg";
+        var displayVideoKey = $"events/{ev.Slug}/display/{mediaId}.mp4";
 
         // Persist original
         await using (var src = await file.GetContentAsync(ctx.CancellationToken))
@@ -94,8 +95,8 @@ public class TusUploadHandler(
         {
             if (kind == MediaKind.Image)
             {
-                var info = await images.ProcessAsync(origKey, displayKey, thumbKey, ctx.CancellationToken);
-                media.DisplayKey = displayKey;
+                var info = await images.ProcessAsync(origKey, displayImageKey, thumbKey, ctx.CancellationToken);
+                media.DisplayKey = displayImageKey;
                 media.ThumbnailKey = thumbKey;
                 media.Width = info.Width;
                 media.Height = info.Height;
@@ -104,11 +105,14 @@ public class TusUploadHandler(
             }
             else
             {
-                var info = await videos.ProcessAsync(origKey, thumbKey, posterKey, ctx.CancellationToken);
+                var info = await videos.ProcessAsync(
+                    origKey, thumbKey, posterKey, displayVideoKey, ctx.CancellationToken);
                 // ProcessAsync swallows ffmpeg failures, so check the files
-                // actually exist before claiming we have a thumbnail.
+                // actually exist before claiming we have them.
                 if (storage.Exists(thumbKey)) media.ThumbnailKey = thumbKey;
                 if (storage.Exists(posterKey)) media.PosterKey = posterKey;
+                if (info.TranscodedToMp4 && storage.Exists(displayVideoKey))
+                    media.DisplayKey = displayVideoKey;
                 media.DurationSeconds = info.DurationSeconds;
                 media.Status = MediaStatus.Ready;
             }

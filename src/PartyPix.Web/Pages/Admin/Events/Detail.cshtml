@@ -6,6 +6,7 @@
     var recentItems = JsonSerializer.Serialize(
         Model.RecentMedia.Select(i => new { id = i.Id, kind = i.Kind, uploaderName = i.UploaderName }));
     var deleteError = TempData["DeleteError"] as string;
+    var regenStatus = TempData["RegenStatus"] as string;
 }
 
 @Html.AntiForgeryToken()
@@ -43,6 +44,10 @@
     @if (!string.IsNullOrEmpty(deleteError))
     {
         <div class="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">@deleteError</div>
+    }
+    @if (!string.IsNullOrEmpty(regenStatus))
+    {
+        <div class="mt-4 rounded-md bg-green-50 p-3 text-sm text-green-700">@regenStatus</div>
     }
 
     <div class="mt-8 grid gap-6 md:grid-cols-2">
@@ -96,7 +101,16 @@
     <div class="mt-10"
          x-data="galleryLightbox({ items: @recentItems, canDelete: true })"
          @@media-added.window="addItem($event.detail)">
-        <h2 class="text-lg font-semibold text-bronze">Recent uploads</h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="text-lg font-semibold text-bronze">Recent uploads</h2>
+            <form method="post" asp-page-handler="RegenerateVideoArtifacts">
+                <button type="submit"
+                        class="rounded-md border border-bronze/30 bg-white px-3 py-1.5 text-sm text-ink hover:bg-parchment"
+                        title="Re-run ffmpeg on every video missing a thumbnail or H.264 playback variant. Useful for clips uploaded before the video pipeline shipped.">
+                    Regenerate video thumbnails
+                </button>
+            </form>
+        </div>
 
         <div x-show="items.length === 0"
              class="mt-3 rounded-md border border-dashed border-bronze/40 p-8 text-center text-sm text-ink-soft">

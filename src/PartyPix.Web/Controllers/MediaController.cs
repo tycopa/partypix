@@ -84,8 +84,18 @@ public class MediaController(
         {
             if (m.Kind == MediaKind.Video)
             {
-                key = m.StorageKey;
-                contentType = m.ContentType;
+                // Prefer the transcoded H.264 MP4 when we have one, since
+                // Chrome/Edge can't play HEVC originals from iPhone clips.
+                if (!string.IsNullOrEmpty(m.DisplayKey) && storage.Exists(m.DisplayKey))
+                {
+                    key = m.DisplayKey;
+                    contentType = "video/mp4";
+                }
+                else
+                {
+                    key = m.StorageKey;
+                    contentType = m.ContentType;
+                }
             }
             else
             {

@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace PartyPix.Web.Services;
 
-public record ProcessedVideo(double? DurationSeconds);
+public record ProcessedVideo(double? DurationSeconds, bool TranscodedToMp4);
 
 /// <summary>
 /// Pulls a poster frame and the playback duration out of an uploaded video
@@ -29,23 +29,28 @@ public class VideoProcessor(
     }
 
     /// <summary>
-    /// Writes a 600x600 JPEG thumbnail (square cropped) and a wider, aspect-
-    /// preserved poster JPEG. Either output is best-effort: if ffmpeg is
-    /// missing or fails on a particular file we log and return null duration
-    /// so callers can still mark the upload Ready.
+    /// Writes a 600x600 JPEG thumbnail (square cropped), a wider aspect-
+    /// preserved poster JPEG, and — when the source isn't already H.264 — an
+    /// H.264/AAC MP4 copy at <paramref name="displayKey"/> so Chrome/Edge can
+    /// play iPhone HEVC clips. Each output is best-effort: if ffmpeg is
+    /// missing or fails we log and skip that artifact rather than failing the
+    /// upload.
     /// </summary>
     public async Task<ProcessedVideo> ProcessAsync(
         string originalKey,
         string thumbKey,
         string posterKey,
+        string displayKey,
         CancellationToken ct = default)
     {
         var origPath = storage.ResolvePath(originalKey);
         var thumbPath = storage.ResolvePath(thumbKey);
         var posterPath = storage.ResolvePath(posterKey);
+        var displayPath = storage.ResolvePath(displayKey);
 
         Directory.CreateDirectory(Path.GetDirectoryName(thumbPath)!);
         Directory.CreateDirectory(Path.GetDirectoryName(posterPath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(displayPath)!);
 
         var duration = await TryGetDurationAsync(origPath, ct);
         // Snap to half-duration for very short clips so we don't hit EOF.
@@ -72,7 +77,64 @@ public class VideoProcessor(
             posterPath,
         }, ct);
 
-        return new ProcessedVideo(duration);
+        // Transcode anything that isn't already H.264 to a baseline-compatible
+        // MP4 so non-Safari browsers can play it. iPhone HEVC clips are the
+        // common case. Skip when the codec is already h264 — even ffmpeg
+        // ultrafast adds noticeable latency for nothing.
+        var transcoded = false;
+        var codec = await TryGetVideoCodecAsync(origPath, ct);
+        var needsTranscode = !string.Equals(codec, "h264", StringComparison.OrdinalIgnoreCase);
+        if (needsTranscode)
+        {
+            await TryRunFfmpegAsync(new[]
+            {
+                "-y", "-i", origPath,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-pix_fmt", "yuv420p",
+                "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+                "-c:a", "aac", "-b:a", "128k",
+                "-movflags", "+faststart",
+                displayPath,
+            }, ct);
+            transcoded = File.Exists(displayPath);
+        }
+
+        return new ProcessedVideo(duration, transcoded);
+    }
+
+    private async Task<string?> TryGetVideoCodecAsync(string path, CancellationToken ct)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo(_ffprobe)
+            {
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            psi.ArgumentList.Add("-v");
+            psi.ArgumentList.Add("error");
+            psi.ArgumentList.Add("-select_streams");
+            psi.ArgumentList.Add("v:0");
+            psi.ArgumentList.Add("-show_entries");
+            psi.ArgumentList.Add("stream=codec_name");
+            psi.ArgumentList.Add("-of");
+            psi.ArgumentList.Add("default=noprint_wrappers=1:nokey=1");
+            psi.ArgumentList.Add(path);
+
+            using var proc = Process.Start(psi);
+            if (proc is null) return null;
+
+            var stdout = await proc.StandardOutput.ReadToEndAsync(ct);
+            await proc.WaitForExitAsync(ct);
+            return proc.ExitCode == 0 ? stdout.Trim() : null;
+        }
+        catch (Exception ex)
+        {
+            log.LogWarning(ex, "ffprobe codec read failed for {Path}", path);
+            return null;
+        }
     }
 
     private async Task<double?> TryGetDurationAsync(string path, CancellationToken ct)

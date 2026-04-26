@@ -43,10 +43,17 @@ public class LoginModel(SignInManager<AppUser> signInManager) : PageModel
         if (!ModelState.IsValid) return Page();
 
         var result = await signInManager.PasswordSignInAsync(
-            Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
 
         if (result.Succeeded)
             return LocalRedirect(returnUrl);
+
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(string.Empty,
+                "Too many failed attempts. Try again in a few minutes.");
+            return Page();
+        }
 
         ModelState.AddModelError(string.Empty, "Invalid email or password.");
         return Page();

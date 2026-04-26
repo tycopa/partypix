@@ -38,6 +38,13 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
         options.SignIn.RequireConfirmedAccount = false;
         options.Password.RequiredLength = 10;
         options.Password.RequireNonAlphanumeric = false;
+
+        // Throttle brute-force attempts on /Identity/Account/Login. Five
+        // wrong passwords locks the account for five minutes; the counter
+        // resets after a successful sign-in.
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
