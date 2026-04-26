@@ -35,9 +35,36 @@
             </div>
         }
 
-        <button type="submit"
-                class="w-full rounded-md bg-bronze px-4 py-3 text-lg font-medium text-white hover:bg-bronze-deep">
-            Join the gallery
-        </button>
+        @if (Model.ShowSamePersonPrompt)
+        {
+            <div class="rounded-md border border-bronze/30 bg-bronze/10 p-4 text-sm text-ink">
+                <p>
+                    Looks like <strong>@Model.Input.DisplayName.Trim()</strong> already joined this event.
+                    Are you signing in again under the same name on a new device?
+                </p>
+                <p class="mt-2 text-ink-soft">
+                    If you&rsquo;re a different person with the same first name, please pick a unique
+                    name (last initial, nickname, etc.) so your uploads can be attributed correctly.
+                </p>
+                <input type="hidden" asp-for="Input.ConfirmSamePerson" value="true" />
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button type="submit"
+                            class="rounded-md bg-bronze px-4 py-2 text-sm font-medium text-white hover:bg-bronze-deep">
+                        Yes, it&rsquo;s me — continue
+                    </button>
+                    <a asp-page="/E/Welcome" asp-route-slug="@Model.Event.Slug"
+                       class="rounded-md border border-bronze/40 bg-white px-4 py-2 text-sm text-ink hover:bg-parchment">
+                        Use a different name
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <button type="submit"
+                    class="w-full rounded-md bg-bronze px-4 py-3 text-lg font-medium text-white hover:bg-bronze-deep">
+                Join the gallery
+            </button>
+        }
     </form>
 </section>

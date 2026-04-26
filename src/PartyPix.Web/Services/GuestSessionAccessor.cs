@@ -46,7 +46,28 @@ public class GuestSessionAccessor(AppDbContext db, IHttpContextAccessor http)
         db.GuestSessions.Add(session);
         await db.SaveChangesAsync(ct);
 
-        ctx.Response.Cookies.Append(CookieName(ev.Id), token, new CookieOptions
+        WriteCookie(ctx, ev.Id, token);
+        return session;
+    }
+
+    /// <summary>
+    /// Attach the current device to an existing guest session by writing
+    /// that session's cookie token here. Used by the Welcome page when a
+    /// guest confirms they're returning under the same name on a new
+    /// device — keeps their uploads attributed to a single GuestSession id
+    /// instead of creating a new one with the same display name.
+    /// </summary>
+    public async Task AttachAsync(Event ev, GuestSession existing, CancellationToken ct = default)
+    {
+        var ctx = http.HttpContext ?? throw new InvalidOperationException("No HttpContext");
+        existing.LastSeenAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        WriteCookie(ctx, ev.Id, existing.CookieToken);
+    }
+
+    private static void WriteCookie(HttpContext ctx, Guid eventId, string token)
+    {
+        ctx.Response.Cookies.Append(CookieName(eventId), token, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
@@ -54,8 +75,6 @@ public class GuestSessionAccessor(AppDbContext db, IHttpContextAccessor http)
             Expires = DateTimeOffset.UtcNow.AddDays(180),
             IsEssential = true,
         });
-
-        return session;
     }
 
     private static string HashIp(string ip)

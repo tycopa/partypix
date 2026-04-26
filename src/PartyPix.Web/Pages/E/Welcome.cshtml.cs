@@ -15,6 +15,13 @@ public class WelcomeModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
 
     public Event Event { get; private set; } = default!;
 
+    /// <summary>
+    /// Set to true when an existing guest with that name was found and the
+    /// page is asking the visitor whether they're the same person on a new
+    /// device. The view renders a confirmation block in that case.
+    /// </summary>
+    public bool ShowSamePersonPrompt { get; private set; }
+
     public class InputModel
     {
         [Required, StringLength(80, MinimumLength = 1)]
@@ -22,6 +29,13 @@ public class WelcomeModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
 
         [StringLength(64)]
         public string? AccessCode { get; set; }
+
+        /// <summary>
+        /// Hidden field submitted by the "Yes, it's me" button. Without this,
+        /// a name collision re-renders the page with the prompt instead of
+        /// silently attaching the new device.
+        /// </summary>
+        public bool ConfirmSamePerson { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync(string slug, CancellationToken ct)
@@ -53,7 +67,30 @@ public class WelcomeModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
             return Page();
         }
 
-        await guests.CreateAsync(ev, Input.DisplayName, ct);
+        var trimmed = Input.DisplayName.Trim();
+
+        // Match case-insensitively so "sarah" and "Sarah" both trigger the
+        // prompt; spaces are already trimmed.
+        var existing = await db.GuestSessions
+            .Where(g => g.EventId == ev.Id && g.DisplayName.ToLower() == trimmed.ToLower())
+            .OrderBy(g => g.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        if (existing is not null && !Input.ConfirmSamePerson)
+        {
+            // Returning guest under the same name — ask before merging
+            // them into the existing session.
+            ShowSamePersonPrompt = true;
+            return Page();
+        }
+
+        if (existing is not null && Input.ConfirmSamePerson)
+        {
+            await guests.AttachAsync(ev, existing, ct);
+            return RedirectToPage("/E/Gallery", new { slug });
+        }
+
+        await guests.CreateAsync(ev, trimmed, ct);
         return RedirectToPage("/E/Gallery", new { slug });
     }
 }
