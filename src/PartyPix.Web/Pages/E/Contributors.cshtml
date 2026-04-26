@@ -1,0 +1,48 @@
+@page "/e/{slug}/contributors"
+@model PartyPix.Web.Pages.E.ContributorsModel
+@{
+    Layout = "_GuestLayout";
+    ViewData["Title"] = "Contributors — " + Model.Event.Title;
+}
+
+<section class="py-6">
+    <a asp-page="/E/Gallery" asp-route-slug="@Model.Event.Slug"
+       class="text-sm text-ink-soft hover:text-bronze hover:underline">&larr; Gallery</a>
+
+    <h1 class="mt-2 text-2xl font-semibold tracking-tight text-bronze">Contributors</h1>
+    <p class="text-sm text-ink-soft">
+        @Model.Contributors.Count @(Model.Contributors.Count == 1 ? "person" : "people") · @Model.TotalCount uploads
+    </p>
+
+    @if (Model.Contributors.Count == 0)
+    {
+        <div class="mt-10 rounded-lg border border-dashed border-bronze/40 p-10 text-center">
+            <p class="text-ink-soft">No uploads yet.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            @foreach (var c in Model.Contributors)
+            {
+                <li>
+                    <a asp-page="/E/Gallery" asp-route-slug="@Model.Event.Slug" asp-route-by="@c.Id"
+                       class="group block overflow-hidden rounded-lg bg-white ring-1 ring-bronze/15 transition hover:ring-bronze">
+                        <div class="aspect-square overflow-hidden bg-parchment">
+                            @if (c.SampleMediaId.HasValue)
+                            {
+                                <img src="/media/@c.SampleMediaId/thumb" alt=""
+                                     class="h-full w-full object-cover transition group-hover:scale-105"
+                                     loading="lazy" onerror="this.style.visibility='hidden'" />
+                            }
+                        </div>
+                        <div class="px-3 py-2">
+                            <p class="truncate font-medium text-ink">@c.DisplayName</p>
+                            <p class="text-xs text-ink-soft">@c.Count @(c.Count == 1 ? "upload" : "uploads")</p>
+                        </div>
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+</section>

@@ -103,6 +103,13 @@
             }
         </nav>
     }
+
+    <p class="mt-8 text-center text-sm">
+        <a asp-page="/E/Contributors" asp-route-slug="@Model.Event.Slug"
+           class="text-bronze hover:underline">
+            See all contributors &rarr;
+        </a>
+    </p>
 </section>
 
 @section Scripts {
