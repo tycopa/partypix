@@ -71,4 +71,18 @@ public class GalleryModel(AppDbContext db, GuestSessionAccessor guests) : PageMo
 
         return Page();
     }
+
+    /// <summary>
+    /// Page numbers to render in the pager: always page 1 and the last
+    /// page, plus a window of ±2 around the current page. Callers should
+    /// emit an ellipsis between any two adjacent numbers that aren't
+    /// consecutive.
+    /// </summary>
+    public IEnumerable<int> PageWindow()
+    {
+        var pages = new SortedSet<int> { 1, TotalPages };
+        for (var i = Math.Max(1, CurrentPage - 2); i <= Math.Min(TotalPages, CurrentPage + 2); i++)
+            pages.Add(i);
+        return pages;
+    }
 }

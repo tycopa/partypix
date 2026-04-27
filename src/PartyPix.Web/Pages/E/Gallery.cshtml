@@ -75,7 +75,7 @@
 
     @if (Model.TotalPages > 1)
     {
-        <nav class="mt-8 flex items-center justify-center gap-3 text-sm">
+        <nav class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm">
             @if (Model.CurrentPage > 1)
             {
                 <a asp-route-slug="@Model.Event.Slug" asp-route-p="@(Model.CurrentPage - 1)" asp-route-by="@Model.FilteredByUploaderId"
@@ -88,7 +88,26 @@
                 <span class="rounded-md border border-bronze/15 px-3 py-1.5 text-ink-soft/60">&larr; Previous</span>
             }
 
-            <span class="text-ink-soft">Page @Model.CurrentPage of @Model.TotalPages</span>
+            @{
+                int? lastEmitted = null;
+            }
+            @foreach (var n in Model.PageWindow())
+            {
+                if (lastEmitted.HasValue && n > lastEmitted.Value + 1)
+                {
+                    <span class="px-1 text-ink-soft" aria-hidden="true">…</span>
+                }
+                if (n == Model.CurrentPage)
+                {
+                    <span class="rounded-md bg-bronze px-3 py-1.5 font-medium text-white" aria-current="page">@n</span>
+                }
+                else
+                {
+                    <a asp-route-slug="@Model.Event.Slug" asp-route-p="@n" asp-route-by="@Model.FilteredByUploaderId"
+                       class="rounded-md border border-bronze/30 bg-white px-3 py-1.5 text-ink hover:bg-parchment">@n</a>
+                }
+                lastEmitted = n;
+            }
 
             @if (Model.CurrentPage < Model.TotalPages)
             {
